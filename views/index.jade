@@ -1,0 +1,48 @@
+doctype html
+html(lang="en")
+	head
+		title= "Easycode for Node.js"
+		link(href="../css/bootstrap.min.css" rel="stylesheet")
+		script(type='text/javascript' src='../js/jquery.min.js')
+		script(type='text/javascript' src='../js/bootstrap.min.js')
+		script(type='text/javascript' src='../js/d3.min.js')
+		script(type='text/javascript').
+			function enterNames() {
+				$("#message").html("<h1>Coding in Node.js is easy for the folks in #{location}!</h1>");
+			}
+
+			function loadMap() {
+				var locations=[{"location" : escape("#{location}")}];
+				var mapview=d3.select("#mapview").selectAll(".map").data(locations);
+					mapview.exit().remove();
+					mapview.enter()
+						.append("iframe")
+							.attr("width","500")
+							.attr("height", "400")
+							.attr("frameborder","0")
+							.attr("style","border:0")
+							.attr("src",function(d) { return "https://www.google.com/maps/embed/v1/place?key=AIzaSyDFp34f_0qNT4ryT88FnXHlf8RKOMTSL40" + String.fromCharCode(38) + "q=" + d.location;});
+			} 
+		 
+			function initialize() {
+				enterNames();
+				loadMap();
+			}
+body
+	nav(class="navbar navbar-inverse")
+		div(class="container-fluid")
+			div(class="navbar-header")
+				button(type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar")
+				span(class="sr-only") Toggle navigation
+				span(class="icon-bar")
+				span(class="icon-bar")
+				span(class="icon-bar")
+				a(class="navbar-brand" href="#") EasyCode
+			img(class="col-xs-3" src="images/federation-bar.png")
+	center
+		div(id='message' class="row col-xs-12")
+		img(src='images/cf.png')
+		div(id='mapview')
+
+	script(type='text/javascript').
+		window.onload=initialize();
