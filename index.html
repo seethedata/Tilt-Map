@@ -7,34 +7,108 @@
 <script src="http:	//d3js.org/topojson.v1.min.js"></script>	
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
 <script language="javascript">
-function loadViz(viz) {
-	alert("Load " + viz);
-}	
 
+var regions =["Africa","Asia","Central America","Europe","North America","Oceania","South America"];
+
+var  points = [{"lat":-75.5,"lon": 40.1,"pitch":80},{"lat":0,"lon":0,"pitch":4}]
+
+var active = d3.select(null);
+
+var svg;
+var projection;
+var path;
+var width = 960;
+var height = 500;	
 function initialize() {
-	var width = 960,
-    height = 1160;
+	projection=d3.geoMercator();
+	/*	.scale(500)
+		.translate([width/2,height/2]);*/
+			
+	path=d3.geoPath()
+		.projection(projection);
 
-	var svg = d3.select("#tiltMap").append("svg")
+
+	svg = d3.select("#tiltMap").append("svg")
     .attr("width", width)
     .attr("height", height);
-
+	g = svg.append("g");
+	
 	d3.json("countryData/world.json", function(error, world) {
 		if (error) return console.error(error);
 		console.log(world);
+
+		var subunits=topojson.feature(world, world.objects.subunits);
+			
+		g.selectAll(".subunit")
+		.data(topojson.feature(world, world.objects.subunits).features)
+		.enter()
+			.append("path")
+			.attr("class", function(d) {return "subunit " + d.id;})
+			.attr("d",path)
+			.on("click", clicked);
+	  
+		g.append("path")
+			.datum(topojson.mesh(world, world.objects.subunits))
+			.attr("d", path)
+			.attr("class", "subunit-boundary");	
 		
-		svg.append("path")
-		.datum(topojson.feature(world, world.objects.subunits))
-		.attr("d", d3.geoPath().projection(d3.geoMercator()));
-
+		g.selectAll(".device")
+		.data(points)
+		.enter()
+			.append("circle")
+				.attr("r",function(d) {return d.pitch/10;})
+				.attr("transform", function(d) {return "translate(" + projection([d.lat,d.lon]) + ")";})
+				.attr("class", "device")
+		.exit()
+			.remove();
 	});
-	
 
-	
-	
+		
+
+function clicked(d) {
+  if (active.node() === this) return reset();
+  active.classed("active", false);
+  active = d3.select(this).classed("active", true);
+  var bounds = path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = .9 / Math.max(dx / width, dy / height),
+      translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+
+  g.transition()
+      .duration(750)
+      .style("stroke-width", 1.5 / scale + "px")
+      .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+}
+
+function reset() {
+  active.classed("active", false);
+  active = d3.select(null);
+
+var g=d3.select("g");
+  g.transition()
+      .duration(750)
+      .style("stroke-width", "1.5px")
+      .attr("transform", "");
+}
+
 
 }
 </script>
+<style>
+.subunit { fill: #ddd;}
+
+.subunit-boundary {
+  fill: none;
+  stroke: #777;
+  stroke-linejoin: round;
+}
+
+
+</style>
 </head>
 <body>
 	<nav class="navbar navbar-inverse">
@@ -60,13 +134,13 @@ function initialize() {
 						Location
 						</a>
 					<ul class="dropdown-menu" role="menu">
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"Africa")'>Africa</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"Asia")'>Asia</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"Central America")'>Central America</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"Europe")'>Europe</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"North America")'>North America</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"Oceania")'>Oceania</a></li>
-						<li><a role="menuitem" onClick='loadViz("Location",2000,"South America")'>South America</a></li>
+						<li><a role="menuitem" onClick='focusMap("Africa")'>Africa</a></li>
+						<li><a role="menuitem" onClick='focusMap("Asia")'>Asia</a></li>
+						<li><a role="menuitem" onClick='focusMap("Central America")'>Central America</a></li>
+						<li><a role="menuitem" onClick='focusMap("Europe")'>Europe</a></li>
+						<li><a role="menuitem" onClick='focusMap("North America")'>North America</a></li>
+						<li><a role="menuitem" onClick='focusMap("Oceania")'>Oceania</a></li>
+						<li><a role="menuitem" onClick='focusMap("South America")'>South America</a></li>
 					</ul>
 				</li>
 			  </ul>

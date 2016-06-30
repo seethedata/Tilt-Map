@@ -1,5 +1,5 @@
 ---
 applications:
-- name: tiltMap
+- name: tilt-map
   memory: 512M
 buildpack: nodejs_buildpack
