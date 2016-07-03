@@ -8,7 +8,7 @@
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
 <script language="javascript">
 
-var regions =["Africa","Asia","Central America","Europe","North America","Oceania","South America"];
+var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 
 var  points = [{"lat":-75.5,"lon": 40.1,"pitch":80},{"lat":0,"lon":0,"pitch":4}]
 
@@ -31,28 +31,43 @@ function initialize() {
 	svg = d3.select("#tiltMap").append("svg")
     .attr("width", width)
     .attr("height", height);
-	g = svg.append("g");
+	/*g = svg.append("g");*/
 	
 	d3.json("countryData/world.json", function(error, world) {
 		if (error) return console.error(error);
 		console.log(world);
-
 		var subunits=topojson.feature(world, world.objects.subunits);
-			
-		g.selectAll(".subunit")
-		.data(topojson.feature(world, world.objects.subunits).features)
-		.enter()
-			.append("path")
-			.attr("class", function(d) {return "subunit " + d.id;})
-			.attr("d",path)
-			.on("click", clicked);
-	  
-		g.append("path")
-			.datum(topojson.mesh(world, world.objects.subunits))
-			.attr("d", path)
-			.attr("class", "subunit-boundary");	
 		
-		g.selectAll(".device")
+		for (var i=0, len=regions.length;i < len; i++) {
+			g=svg.append("g").attr("id",regions[i]);
+			
+			g.selectAll(".subunit")
+			.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
+			.enter()
+				.append("path")
+				.attr("class", function(d) {return "subunit " + d.id;})
+				.attr("d",path)
+				/*.on("click", clicked);*/
+		
+			
+			if (regions[i] == "North America") {
+				g.append("path")
+				.datum(topojson.mesh(world, world.objects.states))
+				.attr("class", "state-boundary")
+				.attr("stroke", "black")
+				.attr("fill","none")
+				.attr("d", path);
+				}
+		}
+		g.append("path")
+				.datum(topojson.mesh(world, world.objects.subunits))
+				.attr("class", "subunit-boundary")
+				.attr("stroke", "black")
+				.attr("fill","none")
+				.attr("d", path);	
+		
+			
+		svg.selectAll(".device")
 		.data(points)
 		.enter()
 			.append("circle")
@@ -101,10 +116,7 @@ var g=d3.select("g");
 <style>
 .subunit { fill: #ddd;}
 
-.subunit-boundary {
-  fill: none;
-  stroke: #777;
-  stroke-linejoin: round;
+
 }
 
 
