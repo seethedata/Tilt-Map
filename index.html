@@ -52,19 +52,20 @@ function initialize() {
 			
 			if (regions[i] == "North America") {
 				g.append("path")
-				.datum(topojson.mesh(world, world.objects.states))
+				.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
 				.attr("class", "state-boundary")
 				.attr("stroke", "black")
 				.attr("fill","none")
 				.attr("d", path);
-				}
+			}
 		}
+		
 		g.append("path")
 				.datum(topojson.mesh(world, world.objects.subunits))
 				.attr("class", "subunit-boundary")
 				.attr("stroke", "black")
 				.attr("fill","none")
-				.attr("d", path);	
+				.attr("d", path);
 		
 			
 		svg.selectAll(".device")
