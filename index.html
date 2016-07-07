@@ -28,10 +28,10 @@
 	*/
 	
 
-
+	var colorIndex=1;
 	var active = d3.select(null);
 
-	var dataURL='http://tilt.cfapps.io/safe_dump?min_score=0&latest=1';
+	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var svg;
 	var projection;
 	var path;
@@ -51,6 +51,12 @@
 		.attr("width", width)
 		.attr("height", height);
 		
+		svg.append("rect")
+		.attr("class", "background")
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", reset);
+		
 		d3.json("countryData/world.json", function(error, world) {
 			if (error) return console.error(error);
 			var subunits=topojson.feature(world, world.objects.subunits);
@@ -62,40 +68,38 @@
 				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
 				.enter()
 					.append("path")
-					.attr("class", function(d) {return "subunit " + d.id;})
+					.attr("class", function(d) {colorIndex++; if(colorIndex > 12) colorIndex=1; return "subunit " + d.id + " color" + colorIndex ;})
 					.attr("d",path)
-					/*.on("click", clicked);*/
-			
+					.attr("stroke", "#888888")
+					.on("click", clicked);
+				
 				
 				if (regions[i] == "North America") {
 					g.append("path")
 					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
 					.attr("class", "state-boundary")
-					.attr("stroke", "black")
+					.attr("stroke", "#888888")
 					.attr("fill","none")
 					.attr("d", path);
 				}
 			}
 			
-			g.append("path")
-					.datum(topojson.mesh(world, world.objects.subunits))
-					.attr("class", "subunit-boundary")
-					.attr("stroke", "black")
-					.attr("fill","none")
-					.attr("d", path);
+
 		});
 	}
 
 	function getDeviceData() {
-		d3.json(dataURL, function plotDevices(error, devData) {
+		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+		d3.json(url, function plotDevices(error, devData) {
 			if (error) return console.warn(error);
+			min_ts=devData.timestamp;
 			devices=d3.select("svg").selectAll(".device")
 					.data(devData.data);
 			devices.transition()
 					.attr("transform", function(d) {var jsonData=JSON.parse(d); return "translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")";})
 					.attr("r",function(d) {var jsonData=JSON.parse(d);return Math.sqrt(Math.abs(jsonData.TiltFB));})
-					/*.attr("fill",function(d) {var jsonData=JSON.parse(d);return jsonData.TiltFB > 0 ? "#000000" : "#FF0000";});*/
-					.attr("fill",function(d) {var jsonData=JSON.parse(d);return getColor(jsonData.TiltFB);});
+					.attr("fill",function(d) {var jsonData=JSON.parse(d);return getColor(jsonData.TiltFB);})
+					.attr("stroke","#000000");
 
 			
 			devices.exit().remove();		
@@ -116,12 +120,12 @@
 			color="#FF0000";
 		} else if (val > -80 && val <= -60) {
 			color="#FFA500";
-		}else if ( val  > -60 && val <+ -10) {
-			color="#006400";
+		} else if (val > -60 && val <= -10) {
+			color="#FFFF00";
 		} else if (val > -10 && val <= 40) {
-			color="#0000FF";
-		} else if (val > 40 && val <= 60) {
 			color="#006400";
+		} else if (val > 40 && val <= 60) {
+			color="#FFFF00";
 		} else if (val > 60 && val <= 80) {
 			color="#FFA500";
 		} else if (val > 80) {
@@ -129,7 +133,8 @@
 		}
 		return color;
 	}
-/*	function clicked(d) {
+	
+	function clicked(d) {
 	  if (active.node() === this) return reset();
 	  active.classed("active", false);
 	  active = d3.select(this).classed("active", true);
@@ -140,33 +145,60 @@
 		  y = (bounds[0][1] + bounds[1][1]) / 2,
 		  scale = .9 / Math.max(dx / width, dy / height),
 		  translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-
+	var g=d3.select(this.parentNode);
+	d3.selectAll("g")
+		.attr("visibility","hidden");
 	  g.transition()
+		  .attr("visibility","visible")
 		  .duration(750)
 		  .style("stroke-width", 1.5 / scale + "px")
 		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
 	}
 
 	function reset() {
-	  active.classed("active", false);
-	  active = d3.select(null);
-
-		var g=d3.select("g");
-		  g.transition()
+		active.classed("active", false);
+		active = d3.select(null);
+		
+		var g=d3.select(active.node().parentNode);
+		g.transition()
 			  .duration(750)
 			  .style("stroke-width", "1.5px")
 			  .attr("transform", "");
-	}*/
+		d3.selectAll("g")
+		.attr("visibility","visible");
+	}
 
 
 </script>
 <style>
-.subunit { fill: #ddd;}
+.subunit { fill : #ddd;}
+/*.subunit.color1 { fill: #DB7093; }
+.subunit.color2 { fill: #F08080; }
+.subunit.color3 { fill: #FF7F50; }
+.subunit.color4 { fill: #BD676B; }
+.subunit.color5 { fill: #800000; }
+.subunit.color6 { fill: #8FBC8F; }
+.subunit.color7 { fill: #20B2AA; }
+.subunit.color8 { fill: #5F9EA0; }
+.subunit.color9 { fill: #DA70D6; }
+.subunit.color10 { fill: #FFDAB9; }
+.subunit.color11 { fill: #BC8F8F; }
+.subunit.color12 { fill: #00FA9A; }*/
 
-
+.background {
+  fill: none;
+  pointer-events: all;
+}
+#tiltMap {
+		width : 1000px;
+		background-color : #6495ED; 
+		border : solid;
+		margin : auto;
 }
 
+body { background-image : url("images/wood.jpg");
+	background-repeat: repeat;
+}
 
 </style>
 </head>
@@ -210,8 +242,7 @@
 			</div>
 		  </div>
     </nav>
-	<div class="container-fluid" id="mainScreen">
-		<div id='tiltMap' class="row col-xs-12"></div>
+	<div class="container-fluid" id="tiltMap">
 	</div>
 	<script>
 	window.onload=initialize();
