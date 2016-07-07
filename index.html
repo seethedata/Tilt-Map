@@ -135,34 +135,40 @@
 	}
 	
 	function clicked(d) {
-	  if (active.node() === this) return reset();
-	  active.classed("active", false);
-	  active = d3.select(this).classed("active", true);
-	  var bounds = path.bounds(d),
+		if (active.node() === this) return reset();
+		
+		active.classed("active", false);
+		active = d3.select(this).classed("active", true);
+		
+		var bounds = path.bounds(d),
 		  dx = bounds[1][0] - bounds[0][0],
 		  dy = bounds[1][1] - bounds[0][1],
 		  x = (bounds[0][0] + bounds[1][0]) / 2,
 		  y = (bounds[0][1] + bounds[1][1]) / 2,
 		  scale = .9 / Math.max(dx / width, dy / height),
 		  translate = [width / 2 - scale * x, height / 2 - scale * y];
-	var g=d3.select(this.parentNode);
-	d3.selectAll("g")
-		.attr("visibility","hidden");
-	  g.transition()
+	
+		var g=d3.select(this.parentNode);
+		
+		d3.selectAll("g")
+			.attr("visibility","hidden");
+		
+		g.transition()
 		  .attr("visibility","visible")
 		  .duration(750)
-		  .style("stroke-width", 1.5 / scale + "px")
+		  /*.style("stroke-width", 1.5 / scale + "px") */
 		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
 	}
 
 	function reset() {
+		var g=d3.select(active.node().parentNode);
 		active.classed("active", false);
 		active = d3.select(null);
 		
-		var g=d3.select(active.node().parentNode);
+
 		g.transition()
 			  .duration(750)
-			  .style("stroke-width", "1.5px")
+			  /*.style("stroke-width", "1.5px")*/
 			  .attr("transform", "");
 		d3.selectAll("g")
 		.attr("visibility","visible");
