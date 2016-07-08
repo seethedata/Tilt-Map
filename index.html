@@ -98,13 +98,20 @@ These are test inputs for the SVG circles
 					.data(devData.data);
 			
 			devices.each(function(d) {
+						/**********************
+						The "data" array in the JSON from TiLT is actually interpreted by D3 as a string instead of an object. 
+						We need to convert it back into JSON.
+						**********************/
 						var jsonData=JSON.parse(d);
+						
 						d3.select(this).transition()
+						.attr("id",jsonData.devid)
 						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
 						.attr("fill",getColor(jsonData.TiltFB))
 						.attr("stroke","#000000");
 						/********************
-							IE and Edge do not support setting the transform property via CSS. We can work around this by setting the transform property via javascript's setAttribute.
+							IE and Edge do not support setting the transform property via CSS. 
+							We can work around this by setting the transform property via javascript's setAttribute.
 							We would normally just do the following line:
 							.attr("transform", function(d) { var jsonData=JSON.parse(d); return "translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")";})
 						*********************/
@@ -116,7 +123,7 @@ These are test inputs for the SVG circles
 				
 			devices.enter()
 				.append("circle")
-				.attr("class","device"); 	 
+				.attr("class","device");					 
 			});
 			
 	}
