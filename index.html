@@ -4,30 +4,31 @@
 <link href="css/bootstrap.min.css" rel="stylesheet"/>
 <script type='text/javascript' src='js/jquery.min.js'></script>
 <script type='text/javascript' src='js/d3.min.js'></script>
-<script src="http://d3js.org/topojson.v1.min.js"></script>	
+<script type='text/javascript' src='js/topojson.v1.min.js'></script>	
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
 <script language="javascript">
-
-	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-
+/*******************
+These are test inputs for the SVG circles
+***********************************************
 	var points = [{"longitude":-75.5,"latitude": 40.1,"TiltFB":10},{"longitude":0,"latitude":0,"TiltFB":4}];
 
 	var point=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
 
-	/* This works 
+	This works 
 	var testPoint={"data" : [{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}],"instance": ["server:8080:88"],"min_score": 0,"timestamp": 20160706124512964};
-	*/
+	
 
 	
-	/* This works  */
+	This works 
 	var testPoint=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
 	
 	
-	/* This doesn't. The only difference is the lack of starting and ending brackets. The data passed to D3 has to be an array.
+	This doesn't. The only difference is the lack of starting and ending brackets. The data passed to D3 has to be an array.
 	var testPoint={"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965};
-	*/
+**********************************************
+*/
 	
-
+	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 	var colorIndex=1;
 	var active = d3.select(null);
 
@@ -38,8 +39,7 @@
 	var width = 960;
 	var height = 500;	
 	var min_ts=0;
-
-
+	
 	function initialize() {
 		projection=d3.geoMercator();
 
@@ -93,21 +93,32 @@
 		d3.json(url, function plotDevices(error, devData) {
 			if (error) return console.warn(error);
 			min_ts=devData.timestamp;
+			
 			devices=d3.select("svg").selectAll(".device")
 					.data(devData.data);
-			devices.transition()
-					.attr("transform", function(d) {var jsonData=JSON.parse(d); return "translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")";})
-					.attr("r",function(d) {var jsonData=JSON.parse(d);return Math.sqrt(Math.abs(jsonData.TiltFB));})
-					.attr("fill",function(d) {var jsonData=JSON.parse(d);return getColor(jsonData.TiltFB);})
-					.attr("stroke","#000000");
+			
+			devices.each(function(d) {
+						var jsonData=JSON.parse(d);
+						d3.select(this).transition()
+						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
+						.attr("fill",getColor(jsonData.TiltFB))
+						.attr("stroke","#000000");
+						/********************
+							IE and Edge do not support setting the transform property via CSS. We can work around this by setting the transform property via javascript's setAttribute.
+							We would normally just do the following line:
+							.attr("transform", function(d) { var jsonData=JSON.parse(d); return "translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")";})
+						*********************/
+						this.setAttribute('transform',"translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
 
+					});			
 			
 			devices.exit().remove();		
 				
 			devices.enter()
 				.append("circle")
-				.attr("class","device");
+				.attr("class","device"); 	 
 			});
+			
 	}
 		
 
