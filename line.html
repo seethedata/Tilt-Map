@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="css/bootstrap.min.css" rel="stylesheet"/>
+<script type='text/javascript' src='js/jquery.min.js'></script>
+<script type='text/javascript' src='js/d3.v4.min.js'></script>	
+<script type='text/javascript' src='js/bootstrap.min.js'></script>
+<script language="javascript">
+
+	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
+
+	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
+	var svg;
+	var width = 960;
+	var height = 500;	
+	var min_ts=0;
+	
+	var margin = {top: 20, right: 20, bottom: 30, left: 50};
+	var width = 960 - margin.left - margin.right;
+	var height = 500 - margin.top - margin.bottom;
+
+	var parseTime = d3.timeParse("%Y%m%d%H%M%S%L");
+
+	var x = d3.scaleTime().range([0, width]);
+	var y = d3.scaleLinear().range([height, 0]);
+
+	var valueline = d3.line()
+		.x(function(d) {console.log("x val:" + d); return x(d.timestamp); })
+		.y(function(d) { return y(d.TiltFB); });
+	
+	function initialize() {
+		svg = d3.select("#tiltMap").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+				.attr("transform","translate(" + margin.left + "," + margin.top + ")");
+		
+		svg.append("g")
+			.attr("transform", "translate(0," + height + ")")
+			.call(d3.axisBottom(x));
+
+
+		svg.append("g")
+			.call(d3.axisLeft(y));	
+			
+		setInterval(function(){getDeviceData()},500);
+	}
+
+	function getDeviceData() {
+		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+		d3.json(url, function plotDevices(error, devData) {
+			if (error) return console.warn(error);
+					
+			devData.data.forEach(function(d) {
+
+				var jsonData=JSON.parse(d);
+
+				jsonData.timestamp = d3.timeParse(jsonData.timestamp);
+				jsonData.TiltFB = +jsonData.TiltFB;
+	
+				x.domain(d3.extent(jsonData, function(d) { return d.timestamp; }));
+				y.domain([0,d3.max(jsonData, function(d) { return d.TiltFB; })]);
+
+			
+				
+			});
+		
+			devices=d3.select("svg").selectAll(".line")
+					.data([devData.data])
+					.attr("d", function(d){console.log(d[0].TiltFB); return d3.line().x( x(d[0].timestamp)).y(y(d[0].TiltFB))});
+
+
+			devices.enter()
+					.append("path")
+						.attr("class", "line");
+						
+				
+			devices.exit().remove();
+
+		});
+			
+	}
+		
+
+	function getColor(val) {
+		var color;
+		if(val <= -80) {
+			color="#FF0000";
+		} else if (val > -80 && val <= -60) {
+			color="#FFA500";
+		} else if (val > -60 && val <= -10) {
+			color="#FFFF00";
+		} else if (val > -10 && val <= 40) {
+			color="#006400";
+		} else if (val > 40 && val <= 60) {
+			color="#FFFF00";
+		} else if (val > 60 && val <= 80) {
+			color="#FFA500";
+		} else if (val > 80) {
+			color="#FF0000";
+		}
+		return color;
+	}
+	
+	function clicked(d) {
+		if (active.node() === this) return reset();
+		
+		active.classed("active", false);
+		active = d3.select(this).classed("active", true);
+		
+		var bounds = path.bounds(d),
+		  dx = bounds[1][0] - bounds[0][0],
+		  dy = bounds[1][1] - bounds[0][1],
+		  x = (bounds[0][0] + bounds[1][0]) / 2,
+		  y = (bounds[0][1] + bounds[1][1]) / 2,
+		  scale = .9 / Math.max(dx / width, dy / height),
+		  translate = [width / 2 - scale * x, height / 2 - scale * y];
+	
+		var g=d3.select(this.parentNode);
+		
+		d3.selectAll("g")
+			.attr("visibility","hidden");
+		
+		g.transition()
+		  .attr("visibility","visible")
+		  .duration(750)
+		  /*.style("stroke-width", 1.5 / scale + "px") */
+		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+	}
+
+	function reset() {
+		var g=d3.select(active.node().parentNode);
+		active.classed("active", false);
+		active = d3.select(null);
+		
+
+		g.transition()
+			  .duration(750)
+			  /*.style("stroke-width", "1.5px")*/
+			  .attr("transform", "");
+		d3.selectAll("g")
+		.attr("visibility","visible");
+	}
+
+
+</script>
+<style>
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+ }
+</style>
+</head>
+<body>
+	<nav class="navbar navbar-inverse">
+		<div class="container-fluid">
+			<div class="navbar-header">
+			  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			  </button>
+			  <a class="navbar-brand" href="#">Tilt Visualization</a>
+			  
+			</div>
+			<img class="col-xs-3" src="images/federation-bar.png"/>
+			<div id="navbar" class="navbar-collapse collapse">
+
+			  <ul class="nav navbar-nav navbar-right">
+				<li><a onClick='loadViz("Pitch")'><span class="glyphicon glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> Pitch</a></li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+						<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
+						Location
+						</a>
+					<ul class="dropdown-menu" role="menu" id="mapMenu">
+					<script>
+					d3.select("#mapMenu").selectAll("li")
+						.data(regions)
+						.enter()
+						.append("li")
+							.append("a")
+							.attr("role","menuitem")
+							.attr("onClick", function(d) {return "focusMap('" + d + "')";} )
+							.text(function (d) {return d;});
+					</script>
+					</ul>
+				</li>
+			  </ul>
+			</div>
+		  </div>
+    </nav>
+	<div class="container-fluid" id="tiltMap">
+	</div>
+	<script>
+	window.onload=initialize();
+	</script>
+	<link href="css/tilt-map.css" rel="stylesheet"/>
+</body>
+</html>
+

@@ -3,7 +3,7 @@
 <head>
 <link href="css/bootstrap.min.css" rel="stylesheet"/>
 <script type='text/javascript' src='js/jquery.min.js'></script>
-<script type='text/javascript' src='js/d3.min.js'></script>
+<script type='text/javascript' src='js/d3.v4.min.js'></script>
 <script type='text/javascript' src='js/topojson.v1.min.js'></script>	
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
 <script language="javascript">
@@ -29,7 +29,6 @@ These are test inputs for the SVG circles
 */
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-	var colorIndex=1;
 	var active = d3.select(null);
 
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
@@ -39,6 +38,7 @@ These are test inputs for the SVG circles
 	var width = 960;
 	var height = 500;	
 	var min_ts=0;
+	
 	
 	function initialize() {
 		projection=d3.geoMercator();
@@ -54,8 +54,8 @@ These are test inputs for the SVG circles
 		svg.append("rect")
 		.attr("class", "background")
 		.attr("width", width)
-		.attr("height", height)
-		.on("click", reset);
+		.attr("height", height);
+		/*.on("click", reset);*/
 		
 		d3.json("countryData/world.json", function(error, world) {
 			if (error) return console.error(error);
@@ -68,10 +68,10 @@ These are test inputs for the SVG circles
 				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
 				.enter()
 					.append("path")
-					.attr("class", function(d) {colorIndex++; if(colorIndex > 12) colorIndex=1; return "subunit " + d.id + " color" + colorIndex ;})
+					.attr("class", function(d) {return "subunit " + d.id ;})
 					.attr("d",path)
-					.attr("stroke", "#888888")
-					.on("click", clicked);
+					.attr("stroke", "#888888");
+					/*.on("click", clicked);*/
 				
 				
 				if (regions[i] == "North America") {
@@ -103,20 +103,13 @@ These are test inputs for the SVG circles
 						We need to convert it back into JSON.
 						**********************/
 						var jsonData=JSON.parse(d);
-						
+
 						d3.select(this).transition()
 						.attr("id",jsonData.devid)
 						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
 						.attr("fill",getColor(jsonData.TiltFB))
-						.attr("stroke","#000000");
-						/********************
-							IE and Edge do not support setting the transform property via CSS. 
-							We can work around this by setting the transform property via javascript's setAttribute.
-							We would normally just do the following line:
-							.attr("transform", function(d) { var jsonData=JSON.parse(d); return "translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")";})
-						*********************/
-						this.setAttribute('transform',"translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
-
+						.attr("stroke","#000000")
+						.attr("transform","translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
 					});			
 			
 			devices.exit().remove();		
@@ -195,19 +188,8 @@ These are test inputs for the SVG circles
 
 </script>
 <style>
+
 .subunit { fill : #ddd;}
-/*.subunit.color1 { fill: #DB7093; }
-.subunit.color2 { fill: #F08080; }
-.subunit.color3 { fill: #FF7F50; }
-.subunit.color4 { fill: #BD676B; }
-.subunit.color5 { fill: #800000; }
-.subunit.color6 { fill: #8FBC8F; }
-.subunit.color7 { fill: #20B2AA; }
-.subunit.color8 { fill: #5F9EA0; }
-.subunit.color9 { fill: #DA70D6; }
-.subunit.color10 { fill: #FFDAB9; }
-.subunit.color11 { fill: #BC8F8F; }
-.subunit.color12 { fill: #00FA9A; }*/
 
 .background {
   fill: none;
