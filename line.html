@@ -8,7 +8,9 @@
 <script language="javascript">
 
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-
+	var refreshInterval=100; // in milliseconds
+	var sampleWidth=10000; // in milliseconds
+	
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var svg;
 	var width = 960;
@@ -23,10 +25,15 @@
 
 	var x = d3.scaleTime().range([0, width]);
 	var y = d3.scaleLinear().range([height, 0]);
+	
+	y.domain([-180,180]); // Pitch values go from -180 to 180
+
 
 	var valueline = d3.line()
-		.x(function(d) {console.log("x val:" + d); return x(d.timestamp); })
+		.x(function(d) { return x(d.timestamp); })
 		.y(function(d) { return y(d.TiltFB); });
+	
+	var lineData=[];
 	
 	function initialize() {
 		svg = d3.select("#tiltMap").append("svg")
@@ -43,36 +50,42 @@
 		svg.append("g")
 			.call(d3.axisLeft(y));	
 			
-		setInterval(function(){getDeviceData()},500);
+		setInterval(function(){getDeviceData()},refreshInterval);
 	}
 
 	function getDeviceData() {
 		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+
 		d3.json(url, function plotDevices(error, devData) {
 			if (error) return console.warn(error);
-					
+			
+			min_ts=devData.timestamp;	
 			devData.data.forEach(function(d) {
 
 				var jsonData=JSON.parse(d);
 
-				jsonData.timestamp = d3.timeParse(jsonData.timestamp);
-				jsonData.TiltFB = +jsonData.TiltFB;
-	
-				x.domain(d3.extent(jsonData, function(d) { return d.timestamp; }));
-				y.domain([0,d3.max(jsonData, function(d) { return d.TiltFB; })]);
+				jsonData.timestamp = parseTime(jsonData.timestamp);
+				jsonData.TiltFB = +jsonData.TiltFB.toFixed(2);
 
-			
+				lineData.push({"devid" : jsonData.devid, "timestamp" : jsonData.timestamp, "TiltFB" : jsonData.TiltFB});
+				var minTime=d3.min(lineData,function(d) { return d.timestamp});
+				var maxTime=minTime.getTime() + sampleWidth;
+				x.domain([minTime,maxTime]);
 				
+				if (lineData.length > sampleWidth / refreshInterval) {
+					lineData.shift();
+				}
 			});
-		
-			devices=d3.select("svg").selectAll(".line")
-					.data([devData.data])
-					.attr("d", function(d){console.log(d[0].TiltFB); return d3.line().x( x(d[0].timestamp)).y(y(d[0].TiltFB))});
 
+				
+			devices=d3.select("svg").selectAll(".line")
+					.data([lineData])
+					.attr("d", valueline);
 
 			devices.enter()
 					.append("path")
-						.attr("class", "line");
+					.attr("class", "line")
+					.attr("transform","translate(" + margin.left + "," + margin.top + ")");
 						
 				
 			devices.exit().remove();
