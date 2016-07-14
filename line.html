@@ -1,216 +1,94 @@
 <!DOCTYPE html>
-<html>
-<head>
-<link href="css/bootstrap.min.css" rel="stylesheet"/>
-<script type='text/javascript' src='js/jquery.min.js'></script>
-<script type='text/javascript' src='js/d3.v4.min.js'></script>	
-<script type='text/javascript' src='js/bootstrap.min.js'></script>
-<script language="javascript">
-
-	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-	var refreshInterval=100; // in milliseconds
-	var sampleWidth=10000; // in milliseconds
-	
-	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
-	var svg;
-	var width = 960;
-	var height = 500;	
-	var min_ts=0;
-	
-	var margin = {top: 20, right: 20, bottom: 30, left: 50};
-	var width = 960 - margin.left - margin.right;
-	var height = 500 - margin.top - margin.bottom;
-
-	var parseTime = d3.timeParse("%Y%m%d%H%M%S%L");
-
-	var x = d3.scaleTime().range([0, width]);
-	var y = d3.scaleLinear().range([height, 0]);
-	
-	y.domain([-180,180]); // Pitch values go from -180 to 180
-
-
-	var valueline = d3.line()
-		.x(function(d) { return x(d.timestamp); })
-		.y(function(d) { return y(d.TiltFB); });
-	
-	var lineData=[];
-	
-	function initialize() {
-		svg = d3.select("#tiltMap").append("svg")
-			.attr("width", width + margin.left + margin.right)
-			.attr("height", height + margin.top + margin.bottom)
-			.append("g")
-				.attr("transform","translate(" + margin.left + "," + margin.top + ")");
-		
-		svg.append("g")
-			.attr("transform", "translate(0," + height + ")")
-			.call(d3.axisBottom(x));
-
-
-		svg.append("g")
-			.call(d3.axisLeft(y));	
-			
-		setInterval(function(){getDeviceData()},refreshInterval);
-	}
-
-	function getDeviceData() {
-		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
-
-		d3.json(url, function plotDevices(error, devData) {
-			if (error) return console.warn(error);
-			
-			min_ts=devData.timestamp;	
-			devData.data.forEach(function(d) {
-
-				var jsonData=JSON.parse(d);
-
-				jsonData.timestamp = parseTime(jsonData.timestamp);
-				jsonData.TiltFB = +jsonData.TiltFB.toFixed(2);
-
-				lineData.push({"devid" : jsonData.devid, "timestamp" : jsonData.timestamp, "TiltFB" : jsonData.TiltFB});
-				var minTime=d3.min(lineData,function(d) { return d.timestamp});
-				var maxTime=minTime.getTime() + sampleWidth;
-				x.domain([minTime,maxTime]);
-				
-				if (lineData.length > sampleWidth / refreshInterval) {
-					lineData.shift();
-				}
-			});
-
-				
-			devices=d3.select("svg").selectAll(".line")
-					.data([lineData])
-					.attr("d", valueline);
-
-			devices.enter()
-					.append("path")
-					.attr("class", "line")
-					.attr("transform","translate(" + margin.left + "," + margin.top + ")");
-						
-				
-			devices.exit().remove();
-
-		});
-			
-	}
-		
-
-	function getColor(val) {
-		var color;
-		if(val <= -80) {
-			color="#FF0000";
-		} else if (val > -80 && val <= -60) {
-			color="#FFA500";
-		} else if (val > -60 && val <= -10) {
-			color="#FFFF00";
-		} else if (val > -10 && val <= 40) {
-			color="#006400";
-		} else if (val > 40 && val <= 60) {
-			color="#FFFF00";
-		} else if (val > 60 && val <= 80) {
-			color="#FFA500";
-		} else if (val > 80) {
-			color="#FF0000";
-		}
-		return color;
-	}
-	
-	function clicked(d) {
-		if (active.node() === this) return reset();
-		
-		active.classed("active", false);
-		active = d3.select(this).classed("active", true);
-		
-		var bounds = path.bounds(d),
-		  dx = bounds[1][0] - bounds[0][0],
-		  dy = bounds[1][1] - bounds[0][1],
-		  x = (bounds[0][0] + bounds[1][0]) / 2,
-		  y = (bounds[0][1] + bounds[1][1]) / 2,
-		  scale = .9 / Math.max(dx / width, dy / height),
-		  translate = [width / 2 - scale * x, height / 2 - scale * y];
-	
-		var g=d3.select(this.parentNode);
-		
-		d3.selectAll("g")
-			.attr("visibility","hidden");
-		
-		g.transition()
-		  .attr("visibility","visible")
-		  .duration(750)
-		  /*.style("stroke-width", 1.5 / scale + "px") */
-		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-	}
-
-	function reset() {
-		var g=d3.select(active.node().parentNode);
-		active.classed("active", false);
-		active = d3.select(null);
-		
-
-		g.transition()
-			  .duration(750)
-			  /*.style("stroke-width", "1.5px")*/
-			  .attr("transform", "");
-		d3.selectAll("g")
-		.attr("visibility","visible");
-	}
-
-
-</script>
+<meta charset="utf-8">
 <style>
+
 .line {
   fill: none;
-  stroke: steelblue;
-  stroke-width: 2px;
- }
-</style>
-</head>
-<body>
-	<nav class="navbar navbar-inverse">
-		<div class="container-fluid">
-			<div class="navbar-header">
-			  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-				<span class="sr-only">Toggle navigation</span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-			  </button>
-			  <a class="navbar-brand" href="#">Tilt Visualization</a>
-			  
-			</div>
-			<img class="col-xs-3" src="images/federation-bar.png"/>
-			<div id="navbar" class="navbar-collapse collapse">
+  stroke: #000;
+  stroke-width: 1.5px;
+}
 
-			  <ul class="nav navbar-nav navbar-right">
-				<li><a onClick='loadViz("Pitch")'><span class="glyphicon glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> Pitch</a></li>
-				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-						<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
-						Location
-						</a>
-					<ul class="dropdown-menu" role="menu" id="mapMenu">
-					<script>
-					d3.select("#mapMenu").selectAll("li")
-						.data(regions)
-						.enter()
-						.append("li")
-							.append("a")
-							.attr("role","menuitem")
-							.attr("onClick", function(d) {return "focusMap('" + d + "')";} )
-							.text(function (d) {return d;});
-					</script>
-					</ul>
-				</li>
-			  </ul>
-			</div>
-		  </div>
-    </nav>
-	<div class="container-fluid" id="tiltMap">
-	</div>
-	<script>
-	window.onload=initialize();
-	</script>
-	<link href="css/tilt-map.css" rel="stylesheet"/>
-</body>
-</html>
+</style>
+<svg width="960" height="500"></svg>
+<script src="js/d3.v4.min.js"></script>
+<script>
+var tiltAPI="http://tilt.cfapps.io/safe_dump?";
+var min_ts=0;
+var refreshInterval=100; // in milliseconds
+var sampleWidth=300; // Number of data points
+
+var data=[];
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 20, bottom: 20, left: 40},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scaleLinear()
+    .domain([0, sampleWidth - 1])
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .domain([-180, 180])
+    .range([height, 0]);
+
+var line = d3.line()
+    .x(function(d, i) { return x(i); })
+    .y(function(d, i) { return y(d); });
+
+g.append("defs").append("clipPath")
+    .attr("id", "clip")
+  .append("rect")
+    .attr("width", width)
+    .attr("height", height);
+
+
+g.append("g")
+    .attr("class", "axis axis--y")
+    .call(d3.axisLeft(y));
+
+g.append("g")
+    .attr("clip-path", "url(#clip)")
+  .append("path")
+    .datum(data)
+    .attr("class", "line")
+  .transition()
+    .duration(500)
+    .ease(d3.easeLinear);
+    /*.on("start", tick);*/
+
+
+function updateGraphs() {
+	var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+	d3.json(url, function plotDevices(error, devData) {
+		if (error) return console.warn(error);
+		min_ts=devData.timestamp;
+				
+		var jsonData=[JSON.parse(devData.data)];
+
+		for (var i=0;i < jsonData.length ; i++) {
+			data.push(jsonData[i].TiltFB)
+			d3.selectAll(".line")
+			  .attr("id",jsonData[i].devid)
+			  .attr("d", line)
+			  .attr("transform", null);
+			
+		  // Slide it to the left.
+		  d3.selectAll(".line")
+			  .attr("transform", "translate(" + x(-1) + ",0)");
+			/*.transition()
+			  .on("start", tick);*/
+
+		  // Pop the old data point off the front if we exceed number of desired sample points.
+			if (data.length > sampleWidth) {
+				data.shift();
+			}
+		}
+	});
+}
+
+setInterval(updateGraphs,refreshInterval);
+
+</script>
 
