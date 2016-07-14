@@ -4,7 +4,7 @@
 
 .line {
   fill: none;
-  stroke: #000;
+  stroke: "steelblue";
   stroke-width: 1.5px;
 }
 
@@ -15,7 +15,7 @@
 var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 var min_ts=0;
 var refreshInterval=100; // in milliseconds
-var sampleWidth=300; // Number of data points
+var sampleWidth=30000 / refreshInterval; // 30 seconds of graphs (30000 milliseconds broken up into refreshInterval number of points)
 
 var data=[];
 
@@ -53,6 +53,7 @@ g.append("g")
   .append("path")
     .datum(data)
     .attr("class", "line")
+	.attr("stroke","steelblue")
   .transition()
     .duration(500)
     .ease(d3.easeLinear);
