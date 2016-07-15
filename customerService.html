@@ -112,16 +112,16 @@
 					var score=Math.max(0,Math.round(100-math.std(values)));
 					d3.select("#score").text(score);
 					if ( score > 90) 
-						d3.select("#scoreBox").style("background-color","#4444EE");
+						d3.select("#scoreBox").style("background-color","#4444EE"); //Blue
 					else if (score <= 90 && score > 60) {
-						d3.select("#scoreBox").style("background-color","#AAAACD");
+						d3.select("#scoreBox").style("background-color","#AAAACD"); //Gray
 					} else if (score <= 60 && score > 50) {
-						d3.select("#scoreBox").style("background-color","#FF7F50");
+						d3.select("#scoreBox").style("background-color","#F0E68C  "); //
 					} else if (score <=50 && score > 40 ) {
-						d3.select("#scoreBox").style("background-color","#FF7F50");
+						d3.select("#scoreBox").style("background-color","#FF7F50"); //Orange
 					} else if (score <=40 ) {
 						clearInterval(intervalId)
-						d3.select("#scoreBox").style("background-color","#B22222");
+						d3.select("#scoreBox").style("background-color","#B22222"); //Red
 						$("#warning").modal("show");
 					}
 					
