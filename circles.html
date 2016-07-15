@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.line {
+  fill: none;
+  stroke: "steelblue";
+  stroke-width: 1.5px;
+}
+
+</style>
+<svg width="1130" height="500"></svg>
+<script src="js/d3.v4.min.js"></script>
+<script>
+var tiltAPI="http://tilt.cfapps.io/safe_dump?";
+var min_ts=0;
+var refreshInterval=100; // in milliseconds
+
+
+
+function getDeviceData() {
+		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+		d3.json(url, function plotDevices(error, devData) {
+			if (error) return console.warn(error);
+			min_ts=devData.timestamp;
+
+			
+			devices=d3.select("svg").selectAll("g")
+					.data(devData.data);
+			
+			
+			devices.enter()
+				.append("g")
+				.attr("id",function(d) {return d.devid;})
+				.append("circle")
+					.attr("class","device");
+					
+			devices.enter().select("g")
+				.append("text")
+					.attr("x",function(d,i) {return  170+ i*360;})
+					.attr("y",400)
+					.text(function(d,i) {return "Sensor " + eval(i+1);});
+				
+
+				
+			
+			devices.exit().remove();
+			
+			devices.each(function(d,i) {
+
+						/**********************
+						The "data" array in the JSON from TiLT is actually interpreted by D3 as a string instead of an object. 
+						We need to convert it into JSON.
+						**********************/
+						var jsonData=JSON.parse(d);
+						d3.select(this).select("circle").transition()
+						.attr("r",Math.abs(jsonData.TiltFB))
+						.attr("fill","orange")
+						.attr("stroke","#000000")
+						.attr("transform","translate(" + (200 + i*360 ) + ",200)");
+					});			
+			
+		
+		});		
+
+			
+	}
+
+setInterval(getDeviceData,refreshInterval);
+
+</script>
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#screen {  }
+
+#face { width : 250px ; height : 250px}
+
+
+#scoreBox { width : 250px ; height : 250px; background-color : #4444EE ;  }
+
+
+#score { font-size : 8em; color : #FFFFFF;}
+
+#boxLabel { font-size : 2em ; color : #FFFFFF;}
+</style>
+
+<link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+	<div class="container-fluid" id="screen" >
+		<div class="row">
+			<div class="col-lg-3">
+				<img id="face" src="images/user.png"/>
+				<div id="name"><h2>Janice Fakename</h2></div>
+			</div>
+			<div class="col-lg-6">
+				<table class="table">
+				<tr><th>First Name</th><td>Janice</td></tr>
+				<tr><th>Last Name</th><td>Fakename</td></tr>
+				<tr><th>Sex</th><td>Female</td></tr>
+				<tr><th>Address</th><td>123 Main Street Notatown, PA 12345</td></tr>
+				<tr><th>Phone</th><td>555-321-2343</td></tr>
+				<tr><th>Customer Since</th><td>July 11, 2002</td></tr>
+				</table>
+			</div>
+			<div class="col-lg-3" id="scoreBox"><div class="text-center" id="score">100</div><div class="text-center" id="boxLabel">CSAT Score</div></div>
+		</div>
+		<hr/>
+		<div class="row">
+			<div class="col-lg-6">
+				<h3>Latest Transactions</h3>
+				<table class="table table-striped">
+					<tr><th>Date</th><th>Description</th><th>Quantity</th><th>Price</th></tr>
+					<tr><td>June 25,2016</td><td>Super Fun Pack</td><td>1</td><td>$350.76</td></tr>
+					<tr><td>June 19,2016</td><td>Fullport Accessory</td><td>3</td><td>$9.45</td></tr>
+					<tr><td>March 8, 2016</td><td>Playtime Box Items</td><td>6</td><td>$24.99</td></tr>
+				</table>
+			</div>
+			<div class="col-lg-6">
+			<h3>Call History</h3>
+			<table class="table table-striped">
+				<tr><th>Date</th><th>Description</th><th>Time to Close (min)</th><th>Agent</th></tr>
+				<tr><td>June 26,2016</td><td>Question about Super Fun Pack</td><td>5</td><td>jsmith</td></tr>
+				<tr><td>April 11, 2015</td><td>Billing Inquiry</td><td>30</td><td>abrown</td></tr>
+				<tr><td>December 24, 2004</td><td>Checking store hours</td><td>1</td><td>rroe</td></tr>
+			</table>
+			</div>
+		</div>
+		<div id="warning" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">WARNING! CSAT Score</h4>
+				  </div>
+				  <div class="modal-body" >
+					Janice Fakename's CSAT score has dropped below 50. Her liklihood of leaving is high. Please take one of the following actions.
+					<table class="table">
+						<tr><th>Offer free upgrade to Gold status.</th><td><a class="btn btn-primary" onClick="execute()">Accept</a></div></td></tr>
+						<tr><th>Offer 50% discount coupon.</th><td><a class="btn btn-primary" onClick="execute()">Accept</a></div></td></tr>
+						<tr><th>Contact supervisor.</th><td><a class="btn btn-primary" onClick="execute()">Accept</a></div></td></tr>
+					</table>
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				  </div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+
+	
+	<script>
+	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
+	var min_ts=0;
+	var refreshInterval=500; // in milliseconds
+	var values=[];
+
+	function execute() {
+		var intervalId=setInterval(getDeviceData,refreshInterval);
+		values=[100];
+		$("#warning").modal("hide");
+	}
+
+	function getDeviceData() {
+			var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+			
+			d3.json(url, function plotDevices(error, devData) {
+				if (error) return console.warn(error);
+				min_ts=devData.timestamp;
+				var dataString=JSON.stringify(devData.data).replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\"");
+
+				var jsonData=JSON.parse(dataString);
+
+				for (i=0 ; i <jsonData.length ; i++ ) {
+					values.push(Math.abs(jsonData[i].TiltFB));
+				}	
+
+				if ( values.length > 6 ) {
+					var score=Math.max(0,Math.round(100-math.std(values)));
+					d3.select("#score").text(score);
+					if ( score > 90) 
+						d3.select("#scoreBox").style("background-color","#4444EE");
+					else if (score <= 90 && score > 60) {
+						d3.select("#scoreBox").style("background-color","#AAAACD");
+					} else if (score <= 60 && score > 50) {
+						d3.select("#scoreBox").style("background-color","#FF7F50");
+					} else if (score <=50 && score > 40 ) {
+						d3.select("#scoreBox").style("background-color","#FF7F50");
+					} else if (score <=40 ) {
+						clearInterval(intervalId)
+						d3.select("#scoreBox").style("background-color","#B22222");
+						$("#warning").modal("show");
+					}
+					
+					for (i=0;i < values.length ; i++) {
+						values.shift();
+					}
+				}
+
+				
+				
+			});		
+
+				
+		}
+
+		
+	var intervalId=setInterval(getDeviceData,refreshInterval);
+
+	</script>
+	<script src="js/d3.v4.min.js"></script>
+	<script src="js/math.min.js"></script>
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

@@ -65,7 +65,8 @@ function updateGraphs() {
 	d3.json(url, function plotDevices(error, devData) {
 		if (error) return console.warn(error);
 		min_ts=devData.timestamp;
-				
+		
+		
 		var jsonData=[JSON.parse(devData.data)];
 
 		for (var i=0;i < jsonData.length ; i++) {
@@ -86,6 +87,7 @@ function updateGraphs() {
 				data.shift();
 			}
 		}
+
 	});
 }
 
