@@ -6,6 +6,7 @@
 <script type='text/javascript' src='js/d3.v4.min.js'></script>
 <script type='text/javascript' src='js/topojson.v1.min.js'></script>	
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
+<script type='text/javascript' src='js/math.min.js'></script>
 <script language="javascript">
 /*******************
 These are test inputs for the SVG circles
@@ -30,8 +31,7 @@ These are test inputs for the SVG circles
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 	var start=[{"devid" : "mytruck" ,"latitude" : 40, "longitude" : -75} ,{"devid": "truck2", "latitude" : 19, "longitude" : -99.13}];
-	var active = d3.select(null);
-
+	var refreshInterval=100 // in milliseconds
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var svg;
 	var projection;
@@ -42,7 +42,9 @@ These are test inputs for the SVG circles
 	
 	
 	function initialize() {
-		projection=d3.geoMercator();
+		projection=d3.geoAlbersUsa()
+			.scale(1070)
+			.translate([width / 2, height / 2]);
 
 					
 		path=d3.geoPath()
@@ -57,55 +59,44 @@ These are test inputs for the SVG circles
 			.attr("width", width)
 			.attr("height", height);
 		
+		var g = svg.append("g");
 		
-		d3.json("countryData/world.json", function(error, world) {
-			if (error) return console.error(error);
-			var subunits=topojson.feature(world, world.objects.subunits);
-			
-			for (var i=0, len=regions.length;i < len; i++) {
-				g=svg.append("g").attr("id",regions[i]);
-				
-				g.selectAll(".subunit")
-				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
-				.enter()
-					.append("path")
-					.attr("class", function(d) {return "subunit " + d.id ;})
-					.attr("d",path)
-					.attr("stroke", "#888888");
+		d3.json("countryData/usa.json", function(error, us) {
+			if (error) throw error;
 
-				
-				
-				if (regions[i] == "North America") {
-					g.append("path")
-					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
-					.attr("class", "state-boundary")
-					.attr("stroke", "#888888")
-					.attr("fill","none")
-					.attr("d", path);
-				}
-			}
+			g.append("g")
+				.attr("id", "states")
+				.selectAll("path")
+				  .data(topojson.feature(us, us.objects.states).features)
+				.enter().append("path")
+				  .attr("d", path);
+
+			 g.append("path")
+				  .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
+				  .attr("id", "state-borders")
+				  .attr("d", path);
+			  
 			devices=d3.select("svg").selectAll(".device")
-					.data(start);
+								.data(start);
 
-		devices.enter()
-			.append("circle")
-			.attr("class","device")		
-			.attr("id",function(d) {return d.devid;})
-			.attr("r",5)
-			.attr("fill","#4682B4")
-			.attr("stroke","#000000")
-			.attr("transform",function(d) {console.log(d); return "translate(" + projection([d.longitude,d.latitude]) + ")";});
-		
-		devices
-			.attr("r",5)
-			.attr("fill","#4682B4")
-			.attr("stroke","#000000")
-			.attr("transform",function(d) {console.log(d); return "translate(" + projection([d.longitude,d.latitude]) + ")";});			
-		
-		devices.exit().remove();
+			devices.enter()
+				.append("circle")
+				.attr("class","device")		
+				.attr("id",function(d) {return d.devid;})
+				.attr("r",5)
+				.attr("fill","#4682B4")
+				.attr("stroke","#000000")
+				.attr("transform",function(d) { return "translate(" + projection([d.longitude,d.latitude]) + ")";});
+			
 
-		});
-		
+			devices
+				.attr("r",5)
+				.attr("fill","#4682B4")
+				.attr("stroke","#000000")
+				.attr("transform",function(d) { return "translate(" + projection([d.longitude,d.latitude]) + ")";});			
+			
+			devices.exit().remove();
+		});	
 	}
 	
 	
@@ -115,17 +106,31 @@ These are test inputs for the SVG circles
 		d3.json(url, function plotDevices(error, devData) {
 			if (error) return console.warn(error);
 			min_ts=devData.timestamp;
+			var dataString=JSON.stringify(devData.data).replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\"");
+
+			var jsonData=JSON.parse(dataString);
+
+			var values=[];
+			for (var obj in jsonData) {
+				values.push(jsonData[obj].TiltFB);
+			}
 			
-			
-	
-							 
-			});
-			
+			for (var i=0;i < start.length ; i++) {
+				if (start[i].devid == "mytruck" && start[i].longitude >= -122) {
+					start[i].longitude=start[i].longitude - 0.1;
+				}
+			}
+
+			device=d3.select("#mytruck");
+
+					
+			device.transition()
+					.attr("r", function(d) {return Math.sqrt(Math.abs(math.mean(values)));})
+					.attr("transform",function(d) {return "translate(" + projection([d.longitude,d.latitude]) + ")";});						 
+		});			
 	}
 		
-
-
-	setInterval(function(){getDeviceData()},500);
+	setInterval(function(){getDeviceData()},refreshInterval);
 
 	function getColor(val) {
 		var color;
@@ -191,12 +196,21 @@ These are test inputs for the SVG circles
 </script>
 <style>
 
-.subunit { fill : #ddd;}
+#states { fill : #ddd;}
 
+#state-borders {
+  fill: none;
+  stroke: #888888;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
 .background {
   fill: none;
   pointer-events: all;
 }
+
 #tiltMap {
 		width : 1000px;
 		background-color : #6495ED; 
