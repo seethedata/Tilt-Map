@@ -6,7 +6,6 @@
 <script type='text/javascript' src='js/d3.v4.min.js'></script>
 <script type='text/javascript' src='js/topojson.v1.min.js'></script>	
 <script type='text/javascript' src='js/bootstrap.min.js'></script>
-
 <script language="javascript">
 /*******************
 These are test inputs for the SVG circles
@@ -30,8 +29,8 @@ These are test inputs for the SVG circles
 */
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-	var start=[{"devid" : "mytruck" ,"latitude" : 40, "longitude" : -75}] ;
-	var refreshInterval=100 // in milliseconds
+	var active = d3.select(null);
+
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var svg;
 	var projection;
@@ -39,132 +38,97 @@ These are test inputs for the SVG circles
 	var width = 960;
 	var height = 500;	
 	var min_ts=0;
-	var goVals=[{"min": 70, "max" : 80},  {"min" : -20 , "max": -10}, {"min" : 10 , "max": 20}];
-	var goIndex=0;
-	var stage=1;
-	
+
+
 	function loadPage(url) {
 		window.location.href=url;
 	}
 
 	
 	function initialize() {
-		projection=d3.geoAlbersUsa()
-			.scale(1070)
-			.translate([width / 2, height / 2]);
+		projection=d3.geoMercator();
 
 					
 		path=d3.geoPath()
 			.projection(projection);
 
 		svg = d3.select("#tiltMap").append("svg")
-			.attr("width", width)
-			.attr("height", height);
-			
+		.attr("width", width)
+		.attr("height", height);
+		
 		svg.append("rect")
-			.attr("class", "background")
-			.attr("width", width)
-			.attr("height", height);
+		.attr("class", "background")
+		.attr("width", width)
+		.attr("height", height);
+		/*.on("click", reset);*/
 		
-		var g = svg.append("g");
-		
-		d3.json("countryData/usa.json", function(error, us) {
-			if (error) throw error;
-
-			g.append("g")
-				.attr("id", "states")
-				.selectAll("path")
-				  .data(topojson.feature(us, us.objects.states).features)
-				.enter().append("path")
-				  .attr("d", path);
-
-			 g.append("path")
-				  .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
-				  .attr("id", "state-borders")
-				  .attr("d", path);
-			  
-			devices=d3.select("svg").selectAll(".device")
-								.data(start);
-
-			devices.enter()
-				.append("circle")
-				.attr("class","device")		
-				.attr("id",function(d) {return d.devid;})
-				.attr("r",5)
-				.attr("fill","#4682B4")
-				.attr("stroke","#000000")
-				.attr("transform",function(d) { return "translate(" + projection([d.longitude,d.latitude]) + ")";});
+		d3.json("countryData/world.json", function(error, world) {
+			if (error) return console.error(error);
+			var subunits=topojson.feature(world, world.objects.subunits);
+			
+			for (var i=0, len=regions.length;i < len; i++) {
+				g=svg.append("g").attr("id",regions[i]);
+				
+				g.selectAll(".subunit")
+				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
+				.enter()
+					.append("path")
+					.attr("class", function(d) {return "subunit " + d.id ;})
+					.attr("d",path)
+					.attr("stroke", "#888888");
+					/*.on("click", clicked);*/
+				
+				
+				if (regions[i] == "North America") {
+					g.append("path")
+					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
+					.attr("class", "state-boundary")
+					.attr("stroke", "#888888")
+					.attr("fill","none")
+					.attr("d", path);
+				}
+			}
 			
 
-			devices
-				.attr("r",5)
-				.attr("fill","#4682B4")
-				.attr("stroke","#000000")
-				.attr("transform",function(d) { return "translate(" + projection([d.longitude,d.latitude]) + ")";});			
-			
-			devices.exit().remove();
-		});	
+		});
 	}
-	
-	
-			
+
 	function getDeviceData() {
 		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
 		d3.json(url, function plotDevices(error, devData) {
 			if (error) return console.warn(error);
 			min_ts=devData.timestamp;
-			var dataString=JSON.stringify(devData.data).replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\"");
-
-			var jsonData=JSON.parse(dataString);
-
-			var values=[];
-			for (var obj in jsonData) {
-				values.push(jsonData[obj].TiltFB);
-			}
 			
-			if (stage == 1 && start[0].longitude <= -90){
-				stage = 2;
-				goIndex++;
-				d3.select("#mytruck").attr("r", 10).attr("fill","#FF0000");
-			}
+			devices=d3.select("svg").selectAll(".device")
+					.data(devData.data);
 			
-			if (stage == 2 && start[0].longitude <= -110){
-				stage = 3;
-				goIndex++;
-				d3.select("#mytruck").attr("r", 10).attr("fill","#FF0000");
-			}
+			devices.each(function(d) {
+						/**********************
+						The "data" array in the JSON from TiLT is actually interpreted by D3 as a string instead of an object. 
+						We need to convert it into JSON.
+						**********************/
+						var jsonData=JSON.parse(d);
+
+						d3.select(this).transition()
+						.attr("id",jsonData.devid)
+						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
+						.attr("fill",getColor(jsonData.TiltFB))
+						.attr("stroke","#000000")
+						.attr("transform","translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
+					});			
 			
-			if (start[0].longitude >= -122 && check(d3.mean(values))) {
-				d3.select("#mytruck").attr("r", 5).attr("fill","#4682B4");
-				start[0].longitude=start[0].longitude - 0.2;
+			devices.exit().remove();		
 				
-				if (stage == 2) {
-					start[0].latitude=start[0].latitude - 0.05;
-				}
-				
-				if (stage == 3) {
-					start[0].latitude=start[0].latitude + 0.08;
-				}
-				
-			}
-
-
-			device=d3.select("#mytruck");
-
-					
-			device.transition()
-					.attr("transform",function(d) {return "translate(" + projection([d.longitude,d.latitude]) + ")";});						 
-		});			
+			devices.enter()
+				.append("circle")
+				.attr("class","device");					 
+			});
+			
 	}
 		
-	function check(thisVal) {
-		if (thisVal > goVals[goIndex].min && thisVal < goVals[goIndex].max) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	setInterval(function(){getDeviceData()},refreshInterval);
+
+
+	setInterval(function(){getDeviceData()},500);
 
 	function getColor(val) {
 		var color;
@@ -185,26 +149,57 @@ These are test inputs for the SVG circles
 		}
 		return color;
 	}
+	
+	function clicked(d) {
+		if (active.node() === this) return reset();
+		
+		active.classed("active", false);
+		active = d3.select(this).classed("active", true);
+		
+		var bounds = path.bounds(d),
+		  dx = bounds[1][0] - bounds[0][0],
+		  dy = bounds[1][1] - bounds[0][1],
+		  x = (bounds[0][0] + bounds[1][0]) / 2,
+		  y = (bounds[0][1] + bounds[1][1]) / 2,
+		  scale = .9 / Math.max(dx / width, dy / height),
+		  translate = [width / 2 - scale * x, height / 2 - scale * y];
+	
+		var g=d3.select(this.parentNode);
+		
+		d3.selectAll("g")
+			.attr("visibility","hidden");
+		
+		g.transition()
+		  .attr("visibility","visible")
+		  .duration(750)
+		  /*.style("stroke-width", 1.5 / scale + "px") */
+		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+	}
+
+	function reset() {
+		var g=d3.select(active.node().parentNode);
+		active.classed("active", false);
+		active = d3.select(null);
+		
+
+		g.transition()
+			  .duration(750)
+			  /*.style("stroke-width", "1.5px")*/
+			  .attr("transform", "");
+		d3.selectAll("g")
+		.attr("visibility","visible");
+	}
+
 
 </script>
 <style>
 
-#states { fill : #ddd;}
-
-#state-borders {
-  fill: none;
-  stroke: #888888;
-  stroke-width: 1.5px;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  pointer-events: none;
-}
+.subunit { fill : #ddd;}
 
 .background {
   fill: none;
   pointer-events: all;
 }
-
 #tiltMap {
 		width : 1000px;
 		background-color : #6495ED; 
@@ -212,13 +207,11 @@ These are test inputs for the SVG circles
 }
 
 body { background-color : #6495ED; }
-#startPoint	{visibility : hidden ;  position : absolute; top : 30.5% ; left : 71%; font-size : 2em;}
-#finishPoint {visibility : hidden ; position : absolute; top : 29% ; left : 23.5%; font-size : 2em;}
 
 </style>
 </head>
 <body>
-	<nav class="navbar navbar-inverse">
+<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
 			  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -242,14 +235,12 @@ body { background-color : #6495ED; }
 				</li>
 				<li>
 					<a onClick='loadPage("customerService.html");'>
-						<span class="glyphicon glyphicon-user nav-glyph" aria-hidden="true"></span> 
-						Service
+						<span class="glyphicon glyphicon-user nav-glyph" aria-hidden="true"></span> Service
 					</a>
 				</li>
 				<li>
 					<a onClick='loadPage("trucking.html");'>
-						<span class="glyphicon glyphicon-random nav-glyph" aria-hidden="true"></span> 
-						Logistics
+						<span class="glyphicon glyphicon-random nav-glyph" aria-hidden="true"></span> Logistics
 					</a>
 				</li>
 				<li class="dropdown">
@@ -274,10 +265,8 @@ body { background-color : #6495ED; }
 			</div>
 		  </div>
     </nav>
-
+	
 	<div class="container-fluid" id="tiltMap">
-	<span id="startPoint" class="glyphicon glyphicon-map-marker"></span>
-	<span id="finishPoint" class="glyphicon glyphicon-flag"></span>
 	</div>
 	<script>
 	window.onload=initialize();

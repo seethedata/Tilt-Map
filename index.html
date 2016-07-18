@@ -1,215 +1,27 @@
 <!DOCTYPE html>
+<meta charset="utf-8">
 <html>
 <head>
-<link href="css/bootstrap.min.css" rel="stylesheet"/>
-<script type='text/javascript' src='js/jquery.min.js'></script>
-<script type='text/javascript' src='js/d3.v4.min.js'></script>
-<script type='text/javascript' src='js/topojson.v1.min.js'></script>	
-<script type='text/javascript' src='js/bootstrap.min.js'></script>
-<script language="javascript">
-/*******************
-These are test inputs for the SVG circles
-***********************************************
-	var points = [{"longitude":-75.5,"latitude": 40.1,"TiltFB":10},{"longitude":0,"latitude":0,"TiltFB":4}];
-
-	var point=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
-
-	This works 
-	var testPoint={"data" : [{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}],"instance": ["server:8080:88"],"min_score": 0,"timestamp": 20160706124512964};
-	
-
-	
-	This works 
-	var testPoint=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
-	
-	
-	This doesn't. The only difference is the lack of starting and ending brackets. The data passed to D3 has to be an array.
-	var testPoint={"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965};
-**********************************************
-*/
-	
-	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-	var active = d3.select(null);
-
-	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
-	var svg;
-	var projection;
-	var path;
-	var width = 960;
-	var height = 500;	
-	var min_ts=0;
-	
-	
-	function initialize() {
-		projection=d3.geoMercator();
-
-					
-		path=d3.geoPath()
-			.projection(projection);
-
-		svg = d3.select("#tiltMap").append("svg")
-		.attr("width", width)
-		.attr("height", height);
-		
-		svg.append("rect")
-		.attr("class", "background")
-		.attr("width", width)
-		.attr("height", height);
-		/*.on("click", reset);*/
-		
-		d3.json("countryData/world.json", function(error, world) {
-			if (error) return console.error(error);
-			var subunits=topojson.feature(world, world.objects.subunits);
-			
-			for (var i=0, len=regions.length;i < len; i++) {
-				g=svg.append("g").attr("id",regions[i]);
-				
-				g.selectAll(".subunit")
-				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
-				.enter()
-					.append("path")
-					.attr("class", function(d) {return "subunit " + d.id ;})
-					.attr("d",path)
-					.attr("stroke", "#888888");
-					/*.on("click", clicked);*/
-				
-				
-				if (regions[i] == "North America") {
-					g.append("path")
-					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
-					.attr("class", "state-boundary")
-					.attr("stroke", "#888888")
-					.attr("fill","none")
-					.attr("d", path);
-				}
-			}
-			
-
-		});
-	}
-
-	function getDeviceData() {
-		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
-		d3.json(url, function plotDevices(error, devData) {
-			if (error) return console.warn(error);
-			min_ts=devData.timestamp;
-			
-			devices=d3.select("svg").selectAll(".device")
-					.data(devData.data);
-			
-			devices.each(function(d) {
-						/**********************
-						The "data" array in the JSON from TiLT is actually interpreted by D3 as a string instead of an object. 
-						We need to convert it into JSON.
-						**********************/
-						var jsonData=JSON.parse(d);
-
-						d3.select(this).transition()
-						.attr("id",jsonData.devid)
-						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
-						.attr("fill",getColor(jsonData.TiltFB))
-						.attr("stroke","#000000")
-						.attr("transform","translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
-					});			
-			
-			devices.exit().remove();		
-				
-			devices.enter()
-				.append("circle")
-				.attr("class","device");					 
-			});
-			
-	}
-		
-
-
-	setInterval(function(){getDeviceData()},500);
-
-	function getColor(val) {
-		var color;
-		if(val <= -80) {
-			color="#FF0000";
-		} else if (val > -80 && val <= -60) {
-			color="#FFA500";
-		} else if (val > -60 && val <= -10) {
-			color="#FFFF00";
-		} else if (val > -10 && val <= 40) {
-			color="#006400";
-		} else if (val > 40 && val <= 60) {
-			color="#FFFF00";
-		} else if (val > 60 && val <= 80) {
-			color="#FFA500";
-		} else if (val > 80) {
-			color="#FF0000";
-		}
-		return color;
-	}
-	
-	function clicked(d) {
-		if (active.node() === this) return reset();
-		
-		active.classed("active", false);
-		active = d3.select(this).classed("active", true);
-		
-		var bounds = path.bounds(d),
-		  dx = bounds[1][0] - bounds[0][0],
-		  dy = bounds[1][1] - bounds[0][1],
-		  x = (bounds[0][0] + bounds[1][0]) / 2,
-		  y = (bounds[0][1] + bounds[1][1]) / 2,
-		  scale = .9 / Math.max(dx / width, dy / height),
-		  translate = [width / 2 - scale * x, height / 2 - scale * y];
-	
-		var g=d3.select(this.parentNode);
-		
-		d3.selectAll("g")
-			.attr("visibility","hidden");
-		
-		g.transition()
-		  .attr("visibility","visible")
-		  .duration(750)
-		  /*.style("stroke-width", 1.5 / scale + "px") */
-		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-	}
-
-	function reset() {
-		var g=d3.select(active.node().parentNode);
-		active.classed("active", false);
-		active = d3.select(null);
-		
-
-		g.transition()
-			  .duration(750)
-			  /*.style("stroke-width", "1.5px")*/
-			  .attr("transform", "");
-		d3.selectAll("g")
-		.attr("visibility","visible");
-	}
-
-
-</script>
 <style>
 
-.subunit { fill : #ddd;}
-
-.background {
+.line {
   fill: none;
-  pointer-events: all;
+  stroke: steelblue;
+  stroke-width: 1.5px;
 }
-#tiltMap {
-		width : 1000px;
-		background-color : #6495ED; 
-		border : solid;
-		margin : auto;
-}
-
-body { background-image : url("images/wood.jpg");
-	background-repeat: repeat;
-}
-
 </style>
+<script>
+var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
+
+function loadPage(url) {
+	window.location.href=url;
+}
+</script>
+<script src="js/d3.v4.min.js"></script>
+<link href="css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-	<nav class="navbar navbar-inverse">
+<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
 			  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -225,7 +37,24 @@ body { background-image : url("images/wood.jpg");
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
-				<li><a onClick='loadViz("Pitch")'><span class="glyphicon glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> Pitch</a></li>
+				<li>
+					<a onClick='loadPage("index.html");'>
+						<span class="glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> 
+						Pitch
+					</a>
+				</li>
+				<li>
+					<a onClick='loadPage("customerService.html");'>
+						<span class="glyphicon glyphicon-user nav-glyph" aria-hidden="true"></span> 
+						Service
+					</a>
+				</li>
+				<li>
+					<a onClick='loadPage("trucking.html");'>
+						<span class="glyphicon glyphicon-random nav-glyph" aria-hidden="true"></span> 
+						Logistics
+					</a>
+				</li>
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
 						<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
@@ -239,7 +68,7 @@ body { background-image : url("images/wood.jpg");
 						.append("li")
 							.append("a")
 							.attr("role","menuitem")
-							.attr("onClick", function(d) {return "focusMap('" + d + "')";} )
+							.attr("onClick", 'loadPage("latlong.html");')
 							.text(function (d) {return d;});
 					</script>
 					</ul>
@@ -248,12 +77,123 @@ body { background-image : url("images/wood.jpg");
 			</div>
 		  </div>
     </nav>
-	<div class="container-fluid" id="tiltMap">
+<div class="container-fluid">
+	<div id="graphs" class="row">
 	</div>
-	<script>
-	window.onload=initialize();
-	</script>
-	<link href="css/tilt-map.css" rel="stylesheet"/>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+<script>
+var tiltAPI="http://tilt.cfapps.io/safe_dump?";
+var min_ts=0;
+var refreshInterval=100; // in milliseconds
+var sampleWidth=30000 / refreshInterval; // 30 seconds of graphs (30000 milliseconds broken up into refreshInterval number of points)
+
+
+var margin = {top: 20, right: 20, bottom: 20, left: 40},
+    width = 380- margin.left - margin.right,
+    height = 166 - margin.top - margin.bottom;
+
+	
+var allData=[];
+
+var x = d3.scaleLinear()
+    .domain([0, sampleWidth - 1])
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .domain([-180, 180])
+    .range([height, 0]);
+
+var line = d3.line()
+    .x(function(d, i) {return x(i); })
+    .y(function(d, i) {return y(d);});
+
+
+
+
+function updateGraphs() {
+	var url=tiltAPI + "min_score="+min_ts + "&latest=1";
+	d3.json(url, function plotDevices(error, devData) {
+		if (error) return console.warn(error);
+		min_ts=devData.timestamp;
+	
+		var nextData=devData.data;	
+		
+		for (var i=0; i < nextData.length ; i++)  {
+			var j=JSON.parse(nextData[i].replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\""));
+			var found=false;
+
+			for (var k=0; k < allData.length;k++) {
+				if (allData[k].devid == j.devid) {
+					allData[k].data.push(j.TiltFB);
+					if (allData[k].data.length > sampleWidth) {
+						allData[k].data.shift();
+					}
+					found=true;
+					break;
+				} else {
+					continue;
+				}
+			}
+			
+			if (! found) {
+				allData.push({"devid" : j.devid, "data" : [0,j.TiltFB]});
+			}
+		}
+
+		var svg=d3.select("#graphs").selectAll("svg").data(allData);
+
+		var groups=svg.enter()
+			.append("div")
+			.attr("class","col-lg-4")
+			.append("svg")
+				.attr("id",function(d) {return d.devid;})
+				.attr("width",380)
+				.attr("height", 166)
+					.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	
+		groups
+			.append("g")
+				.attr("class", "axis axis--y")
+				.call(d3.axisLeft(y));
+				
+		groups
+			.append("g")
+			/*.attr("clip-path", "url(#clip)")
+			.attr("id","clip-path")*/
+			.append("path")
+					.attr("class", "line")
+					.attr("id",function(d) { return "lineFor-" + d.devid;});
+		
+		groups
+			.append("text")
+				.text(function(d) {return d.devid;})
+					.attr("transform","translate(0,-5)")
+;		svg.exit().remove();
+		
+
+		for (k=0; k < allData.length; k++) {
+			var thisLine=d3.select("#lineFor-" + allData[k].devid).datum(allData[k].data);
+			thisLine
+				.attr("d", line)
+				.attr("transform", null)
+				.transition()
+					.duration(500)
+					.ease(d3.easeLinear);
+				
+			  // Slide it to the left.
+			 thisLine.selectAll(".line").transition()
+				  .attr("transform", "translate(" + x(-1) + ",0)");
+		}
+
+	});
+}
+
+setInterval(updateGraphs,refreshInterval);
+
+</script>
 </body>
 </html>
-
