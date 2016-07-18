@@ -9,6 +9,8 @@
   stroke: steelblue;
   stroke-width: 1.5px;
 }
+
+
 </style>
 <script>
 var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
@@ -33,7 +35,7 @@ function loadPage(url) {
 			  <a class="navbar-brand" href="#">Tilt Visualization</a>
 			  
 			</div>
-			<img class="col-xs-3" src="images/federation-bar.png"/>
+			<img class="col-xs-5" id="federationLogo" src="images/federation-bar.png"/>
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
@@ -78,6 +80,9 @@ function loadPage(url) {
 		  </div>
     </nav>
 <div class="container-fluid">
+	<div class="row">
+		<h1 class="text-center">http://tilt.cfapps.io</h1>
+	</div>
 	<div id="graphs" class="row">
 	</div>
 </div>

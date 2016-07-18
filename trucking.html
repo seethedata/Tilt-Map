@@ -30,7 +30,9 @@ These are test inputs for the SVG circles
 */
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
-	var start=[{"devid" : "mytruck" ,"latitude" : 40, "longitude" : -75}] ;
+	var startLong= -75;
+	var endLong=-122;
+	var start=[{"devid" : "mytruck" ,"latitude" : 40, "longitude" : startLong}] ;
 	var refreshInterval=100 // in milliseconds
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var svg;
@@ -126,15 +128,17 @@ These are test inputs for the SVG circles
 				stage = 2;
 				goIndex++;
 				d3.select("#mytruck").attr("r", 10).attr("fill","#FF0000");
+				$("#reroute").modal("show");
 			}
 			
 			if (stage == 2 && start[0].longitude <= -110){
 				stage = 3;
 				goIndex++;
 				d3.select("#mytruck").attr("r", 10).attr("fill","#FF0000");
+				$("#reroute2").modal("show");
 			}
 			
-			if (start[0].longitude >= -122 && check(d3.mean(values))) {
+			if (start[0].longitude >= endLong && check(d3.mean(values))) {
 				d3.select("#mytruck").attr("r", 5).attr("fill","#4682B4");
 				start[0].longitude=start[0].longitude - 0.2;
 				
@@ -146,9 +150,14 @@ These are test inputs for the SVG circles
 					start[0].latitude=start[0].latitude + 0.08;
 				}
 				
+			} else {
+				if (stage == 3 && start[0].longitude <= endLong) {
+					$("#reroute3").modal("show");
+					stage=4;
+				}	
 			}
 
-
+			
 			device=d3.select("#mytruck");
 
 					
@@ -230,7 +239,7 @@ body { background-color : #6495ED; }
 			  <a class="navbar-brand" href="#">Tilt Visualization</a>
 			  
 			</div>
-			<img class="col-xs-3" src="images/federation-bar.png"/>
+			<img class="col-xs-5" src="images/federation-bar.png"/>
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
@@ -276,8 +285,56 @@ body { background-color : #6495ED; }
     </nav>
 
 	<div class="container-fluid" id="tiltMap">
-	<span id="startPoint" class="glyphicon glyphicon-map-marker"></span>
-	<span id="finishPoint" class="glyphicon glyphicon-flag"></span>
+		<span id="startPoint" class="glyphicon glyphicon-map-marker"></span>
+		<span id="finishPoint" class="glyphicon glyphicon-flag"></span>
+		<div id="reroute" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Routing Change</h4>
+				  </div>
+				  <div class="modal-body" >
+					<h3>LargeCorp has requested an order of 200,000 units. Rerouting fleet to accomodate.</h3>
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				  </div>
+				</div>
+			</div>
+		</div>
+		<div id="reroute2" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Routing Change</h4>
+				  </div>
+				  <div class="modal-body" >
+					<h3>LargeCorp's 200,000 units have been picked up. Return to original delivery.</h3>
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				  </div>
+				</div>
+			</div>
+		</div>
+		<div id="reroute3" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Route Complete</h4>
+				  </div>
+				  <div class="modal-body" >
+					<h3>Congratulations! Drive Complete.</h3>
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				  </div>
+				</div>
+			</div>
+		</div>
 	</div>
 	<script>
 	window.onload=initialize();

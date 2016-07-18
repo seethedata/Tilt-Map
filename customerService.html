@@ -38,7 +38,7 @@ function loadPage(url) {
 			  <a class="navbar-brand" href="#">Tilt Visualization</a>
 			  
 			</div>
-			<img class="col-xs-3" src="images/federation-bar.png"/>
+			<img class="col-xs-5" src="images/federation-bar.png"/>
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
@@ -50,12 +50,14 @@ function loadPage(url) {
 				</li>
 				<li>
 					<a onClick='loadPage("customerService.html");'>
-						<span class="glyphicon glyphicon-user nav-glyph" aria-hidden="true"></span> Service
+						<span class="glyphicon glyphicon-user nav-glyph" aria-hidden="true"></span> 
+						Service
 					</a>
 				</li>
 				<li>
 					<a onClick='loadPage("trucking.html");'>
-						<span class="glyphicon glyphicon-random nav-glyph" aria-hidden="true"></span> Logistics
+						<span class="glyphicon glyphicon-random nav-glyph" aria-hidden="true"></span> 
+						Logistics
 					</a>
 				</li>
 				<li class="dropdown">
@@ -148,8 +150,12 @@ function loadPage(url) {
 	<script>
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
 	var min_ts=0;
-	var refreshInterval=500; // in milliseconds
+	var refreshInterval=100; // in milliseconds
 	var values=[];
+
+	var tilt = d3.scaleLinear()
+    .domain([0, 90])
+    .range([0, 100]);
 
 	function execute() {
 		var intervalId=setInterval(getDeviceData,refreshInterval);
@@ -168,11 +174,12 @@ function loadPage(url) {
 				var jsonData=JSON.parse(dataString);
 
 				for (i=0 ; i <jsonData.length ; i++ ) {
-					values.push(Math.abs(jsonData[i].TiltFB));
+					values.push(jsonData[i].TiltFB);
 				}	
 
-				if ( values.length > 6 ) {
-					var score=Math.max(0,Math.round(100-math.std(values)));
+				if ( values.length > 4 ) {
+					var score=d3.max([0,100-Math.round(tilt(d3.deviation(values)))]);
+
 					d3.select("#score").text(score);
 					if ( score > 90) 
 						d3.select("#scoreBox").style("background-color","#4444EE"); //Blue
@@ -204,7 +211,6 @@ function loadPage(url) {
 	var intervalId=setInterval(getDeviceData,refreshInterval);
 
 	</script>
-	<script src="js/math.min.js"></script>
 	<script src="js/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 </body>
