@@ -156,9 +156,9 @@
 				}
 			}
 			
-			var svg=d3.select("#graphs").selectAll(".graph").data(Object.keys(allData),function(d) {return d;} );
+			var devices=d3.select("#graphs").selectAll(".graph").data(Object.keys(allData),function(d) {return d;} );
 
-			var groups=svg.enter()
+			var newDevices=devices.enter()
 				.append("div")
 				.attr("id",function(d) {return d;})
 				.attr("class","graph col-lg-4")
@@ -168,25 +168,23 @@
 						.append("g")
 						.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 		
-			groups
+			newDevices
 				.append("g")
 					.attr("class", "axis axis--y")
 					.call(d3.axisLeft(y));
 					
-			groups
+			newDevices
 				.append("g")
-				/*.attr("clip-path", "url(#clip)")
-				.attr("id","clip-path")*/
 				.append("path")
 						.attr("class", "line")
 						.attr("id",function(d) { return "lineFor-" + d;});
 			
-			groups
+			newDevices
 				.append("text")
 					.text(function(d) {return d;})
 						.attr("transform","translate(0,-5)");
 						
-			svg.exit().remove();
+			devices.exit().remove();
 			
 
 			for (var device in allData) {
