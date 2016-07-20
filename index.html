@@ -125,34 +125,51 @@ function updateGraphs() {
 		min_ts=devData.timestamp;
 	
 		var nextData=devData.data;	
+		var activeDevices=[];
+		for (var i=0; i < nextData.length ; i++)  {	
 		
-		for (var i=0; i < nextData.length ; i++)  {
-			var j=JSON.parse(nextData[i].replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\""));
-			var found=false;
-
+		var j=JSON.parse(nextData[i].replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\""));
+			var activeDevice=false;
+			
+			
+			// Update data of existing devices
 			for (var k=0; k < allData.length;k++) {
 				if (allData[k].devid == j.devid) {
 					allData[k].data.push(j.TiltFB);
+					
 					if (allData[k].data.length > sampleWidth) {
 						allData[k].data.shift();
 					}
-					found=true;
+					
+					activeDevice=true;
+					activeDevices.push(k);
 					break;
-				} else {
-					continue;
-				}
+				} 	
 			}
 			
-			if (! found) {
-				allData.push({"devid" : j.devid, "data" : [0,j.TiltFB]});
+			// Add new devices 
+			if (! activeDevice) {
+					activeDevices.push(allData.push({"devid" : j.devid, "data" : [0,j.TiltFB]})-1);
+			console.log(activeDevices);
+			}
+			
+			
+		}
+		// Remove inactive devices
+// TODO: Find a more elegant way to remove devices. 
+		for (var l=0; l < allData.length; l++) {
+			if (activeDevices.includes(l)) {
+				continue;
+			} else {
+				allData.splice(l,1);
 			}
 		}
-
-		var svg=d3.select("#graphs").selectAll("svg").data(allData);
+			
+		var svg=d3.select("#graphs").selectAll(".graph").data(allData,function(d) { return d.devid;} );
 
 		var groups=svg.enter()
 			.append("div")
-			.attr("class","col-lg-4")
+			.attr("class","graph col-lg-4")
 			.append("svg")
 				.attr("id",function(d) {return d.devid;})
 				.attr("width",380)
@@ -177,6 +194,7 @@ function updateGraphs() {
 			.append("text")
 				.text(function(d) {return d.devid;})
 					.attr("transform","translate(0,-5)")
+					
 ;		svg.exit().remove();
 		
 
