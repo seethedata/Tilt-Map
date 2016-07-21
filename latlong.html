@@ -2,6 +2,7 @@
 <html>
 <head>
 <link href="css/bootstrap.min.css" rel="stylesheet"/>
+<link href="css/tilt-map.css" rel="stylesheet">
 <script type='text/javascript' src='js/jquery.min.js'></script>
 <script type='text/javascript' src='js/d3.v4.min.js'></script>
 <script type='text/javascript' src='js/topojson.v1.min.js'></script>	
@@ -192,25 +193,9 @@ These are test inputs for the SVG circles
 
 
 </script>
-<style>
 
-.subunit { fill : #ddd;}
-
-.background {
-  fill: none;
-  pointer-events: all;
-}
-#tiltMap {
-		width : 1000px;
-		background-color : #6495ED; 
-		margin : auto;
-}
-
-body { background-color : #6495ED; }
-
-</style>
 </head>
-<body>
+<body class="mapBody">
 <nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">

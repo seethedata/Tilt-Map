@@ -1,27 +1,19 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <html>
-<head>
-	<style>
-
-	.line {
-	  fill: none;
-	  stroke: steelblue;
-	  stroke-width: 1.5px;
-	}
-
-
-	</style>
+<head>	
 	<script>
-	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
+		var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 
-	function loadPage(url) {
-		window.location.href=url;
-	}
-
+		function loadPage(url) {
+			window.location.href=url;
+		}
 	</script>
+	
 	<script src="js/d3.v4.min.js"></script>
+	
 	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/tilt-map.css" rel="stylesheet">
 </head>
 <body>
 	<nav class="navbar navbar-inverse">
@@ -97,26 +89,28 @@
 	var sampleWidth=30000 / refreshInterval; // 30 seconds of graphs (30000 milliseconds broken up into refreshInterval number of points)
 
 
+	var svgWidth = 380;
+	var svgHeight = 166;
+	
 	var margin = {top: 20, right: 20, bottom: 20, left: 40},
-		width = 380- margin.left - margin.right,
-		height = 166 - margin.top - margin.bottom;
+		graphWidth = svgWidth- margin.left - margin.right,
+		graphHeight = svgHeight - margin.top - margin.bottom;
+	
 
-		
+	
 	var allData={};
 
 	var x = d3.scaleLinear()
 		.domain([0, sampleWidth - 1])
-		.range([0, width]);
+		.range([0, graphWidth]);
 
 	var y = d3.scaleLinear()
 		.domain([-180, 180])
-		.range([height, 0]);
+		.range([graphHeight, 0]);
 
 	var line = d3.line()
 		.x(function(d, i) {return x(i); })
 		.y(function(d) {return y(d);});
-
-
 
 
 	function updateGraphs() {
@@ -163,11 +157,9 @@
 				.attr("id",function(d) {return d;})
 				.attr("class","graph col-lg-4")
 				.append("svg")
-					.attr("width",380)
-					.attr("height", 166)
 						.append("g")
 						.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		
+
 			newDevices
 				.append("g")
 					.attr("class", "axis axis--y")
@@ -185,8 +177,12 @@
 						.attr("transform","translate(0,-5)");
 						
 			devices.exit().remove();
-			
 
+			
+			d3.selectAll("svg")
+				.attr("width", svgWidth)
+				.attr("height", svgHeight);
+				
 			for (var device in allData) {
 				var thisLine=d3.select("#lineFor-" + device).datum(allData[device]);
 				thisLine

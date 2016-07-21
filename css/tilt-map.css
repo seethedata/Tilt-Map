@@ -1,17 +1,58 @@
-html {
-	height : 100%;
+/************************
+Global 
+*************************/
+#deviceList { background-color : #333; margin-top : 10px}
+.line {
+	  fill: none;
+	  stroke: steelblue;
+	  stroke-width: 1.5px;
 }
 
-body {
-	height : 100%;
+.mapBody { background-color : #6495ED; }
+
+.background {
+  fill: none;
+  pointer-events: all;
 }
 
-#tableauContainer{
-	height : 90%;
-}
+/************************
+customerService 
+*************************/
+#face { width : 250px ; height : 250px}
+
+#scoreBox { width : 250px ; height : 250px; background-color : #4444EE ;  }
+
+#score { font-size : 8em; color : #FFFFFF;}
+
+#boxLabel { font-size : 2em ; color : #FFFFFF;}
+
+/************************
+latlong 
+*************************/
+.subunit { fill : #ddd;}
 
 
-#tableauViz {
-	height : 100%;
+
+#tiltMap {
+		width : 1000px;
+		background-color : #6495ED; 
+		margin : auto;
 }
+
+/************************
+trucking 
+*************************/
+#states { fill : #ddd;}
+
+#state-borders {
+  fill: none;
+  stroke: #888888;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+#startPoint	{visibility : hidden ;  position : absolute; top : 30.5% ; left : 71%; font-size : 2em;}
+#finishPoint {visibility : hidden ; position : absolute; top : 29% ; left : 23.5%; font-size : 2em;}
 

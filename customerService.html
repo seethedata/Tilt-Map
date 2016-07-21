@@ -1,24 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-#screen {  }
-
-#face { width : 250px ; height : 250px}
-
-
-#scoreBox { width : 250px ; height : 250px; background-color : #4444EE ;  }
-
-
-#score { font-size : 8em; color : #FFFFFF;}
-
-#boxLabel { font-size : 2em ; color : #FFFFFF;}
-</style>
-
 <link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/tilt-map.css" rel="stylesheet">
 <script src="js/d3.v4.min.js"></script>
 <script>
 var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
+
+var activeDevices=["Devices"];
+var activeDevice="";
 
 function loadPage(url) {
 	window.location.href=url;
@@ -42,6 +32,12 @@ function loadPage(url) {
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
+				<li>
+					<div class="form-group">
+					<select class="form-control" id="deviceList">
+					</select>
+					</div>
+				</li>
 				<li>
 					<a onClick='loadPage("index.html");'>
 						<span class="glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> 
@@ -78,6 +74,7 @@ function loadPage(url) {
 					</script>
 					</ul>
 				</li>
+				
 			  </ul>
 			</div>
 		  </div>
@@ -174,10 +171,22 @@ function loadPage(url) {
 				var jsonData=JSON.parse(dataString);
 
 				for (i=0 ; i <jsonData.length ; i++ ) {
-					values.push(jsonData[i].TiltFB);
+				console.log(d3.select("#deviceList").property("value"));
+					if (jsonData[i].devid == d3.select("#deviceList").property("value")) {
+console.log("pushing");
+						values.push(jsonData[i].TiltFB);
+					}
+					if (activeDevices.indexOf(jsonData[i].devid) == -1 ) {
+						activeDevices.push(jsonData[i].devid);
+					}	
 				}	
-
+				var d=d3.select("#deviceList").selectAll("option").data(activeDevices);
+						
+				d.enter().append("option").text(function(d) { return d;});
+				d.exit().remove();
+				
 				if ( values.length > 4 ) {
+console.log("in it");
 					var score=d3.max([0,100-Math.round(tilt(d3.deviation(values)))]);
 
 					d3.select("#score").text(score);

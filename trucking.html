@@ -2,6 +2,7 @@
 <html>
 <head>
 <link href="css/bootstrap.min.css" rel="stylesheet"/>
+<link href="css/tilt-map.css" rel="stylesheet">
 <script type='text/javascript' src='js/jquery.min.js'></script>
 <script type='text/javascript' src='js/d3.v4.min.js'></script>
 <script type='text/javascript' src='js/topojson.v1.min.js'></script>	
@@ -44,6 +45,8 @@ These are test inputs for the SVG circles
 	var goVals=[{"min": 70, "max" : 80},  {"min" : -20 , "max": -10}, {"min" : 10 , "max": 20}];
 	var goIndex=0;
 	var stage=1;
+	
+	var activeDevices=["Devices"];
 	
 	function loadPage(url) {
 		window.location.href=url;
@@ -121,9 +124,19 @@ These are test inputs for the SVG circles
 
 			var values=[];
 			for (var obj in jsonData) {
-				values.push(jsonData[obj].TiltFB);
+				if (jsonData[obj].devid == d3.select("#deviceList").property("value")) {
+						values.push(jsonData[obj].TiltFB);
+					}
+					if (activeDevices.indexOf(jsonData[obj].devid) == -1 ) {
+						activeDevices.push(jsonData[obj].devid);
+					}	
 			}
-			
+
+			var d=d3.select("#deviceList").selectAll("option").data(activeDevices);
+					
+			d.enter().append("option").text(function(d) { return d;});
+			d.exit().remove();
+
 			if (stage == 1 && start[0].longitude <= -90){
 				stage = 2;
 				goIndex++;
@@ -196,37 +209,9 @@ These are test inputs for the SVG circles
 	}
 
 </script>
-<style>
 
-#states { fill : #ddd;}
-
-#state-borders {
-  fill: none;
-  stroke: #888888;
-  stroke-width: 1.5px;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.background {
-  fill: none;
-  pointer-events: all;
-}
-
-#tiltMap {
-		width : 1000px;
-		background-color : #6495ED; 
-		margin : auto;
-}
-
-body { background-color : #6495ED; }
-#startPoint	{visibility : hidden ;  position : absolute; top : 30.5% ; left : 71%; font-size : 2em;}
-#finishPoint {visibility : hidden ; position : absolute; top : 29% ; left : 23.5%; font-size : 2em;}
-
-</style>
 </head>
-<body>
+<body class="mapBody">
 	<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -243,6 +228,12 @@ body { background-color : #6495ED; }
 			<div id="navbar" class="navbar-collapse collapse">
 
 			  <ul class="nav navbar-nav navbar-right">
+			  	<li>
+					<div class="form-group">
+					<select class="form-control" id="deviceList">
+					</select>
+					</div>
+				</li>
 				<li>
 					<a onClick='loadPage("index.html");'>
 						<span class="glyphicon glyphicon-sort nav-glyph" aria-hidden="true"></span> 
