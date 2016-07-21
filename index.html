@@ -150,7 +150,13 @@
 				}
 			}
 			
-			var devices=d3.select("#graphs").selectAll(".graph").data(Object.keys(allData),function(d) {return d;} );
+			updateLines(allData);
+
+		});
+	}
+
+	function updateLines(data) {
+		var devices=d3.select("#graphs").selectAll(".graph").data(Object.keys(data),function(d) {return d;} );
 
 			var newDevices=devices.enter()
 				.append("div")
@@ -183,8 +189,8 @@
 				.attr("width", svgWidth)
 				.attr("height", svgHeight);
 				
-			for (var device in allData) {
-				var thisLine=d3.select("#lineFor-" + device).datum(allData[device]);
+			for (var device in data) {
+				var thisLine=d3.select("#lineFor-" + device).datum(data[device]);
 				thisLine
 					.attr("d", line)
 					.attr("transform", null)
@@ -196,10 +202,7 @@
 				 thisLine.selectAll(".line").transition()
 					  .attr("transform", "translate(" + x(-1) + ",0)");
 			}
-
-		});
 	}
-
 	setInterval(updateGraphs,refreshInterval);
 
 	</script>
