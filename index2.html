@@ -97,9 +97,6 @@
 		graphHeight = svgHeight - margin.top - margin.bottom;
 	
 
-	
-	var allData={};
-
 	var x = d3.scaleLinear()
 		.domain([0, sampleWidth - 1])
 		.range([0, graphWidth]);
@@ -120,48 +117,22 @@
 			if (error) return console.warn(error);
 			min_ts=devData.timestamp;
 		
-			var nextData=devData.data;	
-			var activeDevices={};
-			for (var i=0; i < nextData.length ; i++)  {	
-			
-				var j=JSON.parse(nextData[i].replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\""));
-				var activeDevice=false;	
-				if(allData.hasOwnProperty(j.devid)) {
-
-					// Update existing devices
-					allData[j.devid].push(j.TiltFB);
-					activeDevices[j.devid]=true;					
-				} else {
-					// Add new devices
-
-					allData[j.devid]=[0,j.TiltFB];
-					activeDevices[j.devid]=true;
-				}
-				
-				// Keep sample window the correct size
-				if (allData[j.devid].length > sampleWidth) {
-					allData[j.devid].shift();
-				}
+			for (var i=0; i < devData.data.length ; i++ ) {
+				devData.data[i]=JSON.parse(devData.data[i].replace(/"{/g,"{").replace(/}"/g,"}").replace(/\\"/g,"\""));
 			}
 			
-			// Remove inactive devices
-			for (var device in allData) {
-				if (! activeDevices.hasOwnProperty(device)) {
-					delete allData[device];
-				}
-			}
-			
-			updateLines(allData);
+			updateLine(devData.data);
 
 		});
 	}
 
 	function updateLines(data) {
-		var devices=d3.select("#graphs").selectAll(".graph").data(Object.keys(data),function(d) {return d;} );
+
+		var devices=d3.select("#graphs").selectAll(".graph").data(data,function(d) {return d.devid;} );
 
 		var newDevices=devices.enter()
 			.append("div")
-			.attr("id",function(d) {return d;})
+			.attr("id",function(d) { return d.devid;})
 			.attr("class","graph col-lg-4")
 			/*.on("click",zoomGraph)*/
 			.append("svg")
@@ -177,11 +148,11 @@
 			.append("g")
 			.append("path")
 					.attr("class", "line")
-					.attr("id",function(d) { return "lineFor-" + d;});
+					.attr("id",function(d) { return "lineFor-" + d.devid;});
 		
 		newDevices
 			.append("text")
-				.text(function(d) {return d;})
+				.text(function(d) { return d.devid;})
 					.attr("transform","translate(0,-5)");
 					
 		devices.exit().remove();
@@ -191,8 +162,21 @@
 			.attr("width", svgWidth)
 			.attr("height", svgHeight);
 			
-		for (var device in data) {
-			var thisLine=d3.select("#lineFor-" + device).datum(data[device]);
+		for (var i=0; i < data.length ; i++) {
+			var thisPath=$("#lineFor-" + data[i].devid);
+			if (! thisPath.data("points")) {
+				thisPath.data("points",[0]);
+			}
+			
+			thisPath.data("points").push(data[i].TiltFB);
+			
+			var thisData=thisPath.data("points");
+			
+			if (thisData.length > sampleWidth) {
+				thisData.shift();
+			}
+			var thisLine=d3.select("#lineFor-" + data[i].devid).datum(thisData);
+			
 			thisLine
 				.attr("d", line)
 				.attr("transform", null)
