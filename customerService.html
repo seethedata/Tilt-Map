@@ -8,7 +8,6 @@
 var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 
 var activeDevices=["Devices"];
-var activeDevice="";
 
 function loadPage(url) {
 	window.location.href=url;
@@ -96,7 +95,7 @@ function loadPage(url) {
 				<tr><th>Customer Since</th><td>July 11, 2002</td></tr>
 				</table>
 			</div>
-			<div class="col-lg-3" id="scoreBox"><div class="text-center" id="score">100</div><div class="text-center" id="boxLabel">CSAT Score</div></div>
+			<div class="col-lg-3" id="scoreBox" onClick="resetScore();"><div class="text-center" id="score">100</div><div class="text-center" id="boxLabel">CSAT Score</div></div>
 		</div>
 		<hr/>
 		<div class="row">
@@ -155,11 +154,16 @@ function loadPage(url) {
     .range([0, 100]);
 
 	function execute() {
-		var intervalId=setInterval(getDeviceData,refreshInterval);
-		values=[100];
 		$("#warning").modal("hide");
 	}
 
+	function resetScore() {
+		d3.select("#scoreBox").style("background-color","#4444EE");
+		d3.select("#score").text(100);
+		intervalId=setInterval(getDeviceData,refreshInterval);
+		values=[100];
+	}
+	
 	function getDeviceData() {
 			var url=tiltAPI + "min_score="+min_ts + "&latest=1";
 			
@@ -171,9 +175,7 @@ function loadPage(url) {
 				var jsonData=JSON.parse(dataString);
 
 				for (i=0 ; i <jsonData.length ; i++ ) {
-				console.log(d3.select("#deviceList").property("value"));
 					if (jsonData[i].devid == d3.select("#deviceList").property("value")) {
-console.log("pushing");
 						values.push(jsonData[i].TiltFB);
 					}
 					if (activeDevices.indexOf(jsonData[i].devid) == -1 ) {
@@ -186,7 +188,6 @@ console.log("pushing");
 				d.exit().remove();
 				
 				if ( values.length > 4 ) {
-console.log("in it");
 					var score=d3.max([0,100-Math.round(tilt(d3.deviation(values)))]);
 
 					d3.select("#score").text(score);
