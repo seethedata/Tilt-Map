@@ -9,6 +9,7 @@
 	<script type='text/javascript' src='js/bootstrap.min.js'></script>
 	<script language="javascript">
 
+	//TODO : enable zoom by click
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
 	var regionZoomArgs={"Africa" :  		{"args" : {"translate" : [375,250], "scale" : 350}},
@@ -90,19 +91,21 @@
 	}
 
 	function doZoom(region) {
+
+		if (region !="World") {
+			projection
+					.scale(regionZoomArgs[region].args.scale)
+					.translate(regionZoomArgs[region].args.translate);	
+								
+		} else {
+			projection
+				.scale(153)
+				.translate([480,250]);
 			
-			if (region !="World") {
-				projection
-						.scale(regionZoomArgs[region].args.scale)
-						.translate(regionZoomArgs[region].args.translate);	
-									
-			} else {
-				projection
-					.scale(153)
-					.translate([480,250]);
-				
-			}
-			d3.selectAll("path").transition().duration(1000).attr("d",path);
+		}
+		
+		d3.selectAll("path").transition().duration(750).attr("d",path);
+
 	}
 	
 	
@@ -155,7 +158,6 @@
 							.append("li")
 								.append("a")
 								.attr("role","menuitem")
-								/*.attr("onClick", function(d) {return 'loadPage("latlong.html?region=' + encodeURI(d) + '");';})*/
 								.attr("onClick", function(d) {return "doZoom(\"" + d + "\");";})
 								.text(function (d) {return d;});
 						</script>
@@ -186,6 +188,30 @@
 		.attr("width", width)
 		.attr("height", height);
 		
+		var filter=svg.append("defs")
+			.append("filter")
+				.attr("id","drop-shadow")
+				.attr("x",0)
+				.attr("y",0)
+				.attr("width","200%")
+				.attr("height","200%");
+		
+		filter.append("feOffest")
+			.attr("result","offOut")
+			.attr("in","SourceAlpha")
+			.attr("dx",20)
+			.attr("dy",20);
+			
+		filter.append("feGaussianBlur")
+			.attr("result","blurOut")
+			.attr("in","offOut")
+			.attr("stdDeviation",10);
+		
+		filter.append("feBlend")
+			.attr("in","SourceGraphic")
+			.attr("in2","blurOut")
+			.attr("mode","normal");
+		
 		svg.append("rect")
 		.attr("class", "background")
 		.attr("width", width)
@@ -199,11 +225,8 @@
 			
 			for (var i=0, len=regions.length;i < len; i++) {
 				var region=regions[i];
-				/*if (zoomRegion != "World" && region != zoomRegion) continue; // only draw requested region. If the region is "world", draw everything.*/
 				
-				
-
-				g=svg.append("g").attr("id",region).attr("class","continent");
+				g=svg.append("g").attr("onClick","doZoom('"+region+"');").attr("id",region).attr("class","continent");
 				
 				g.selectAll(".subunit")
 				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==region;}))
@@ -211,7 +234,9 @@
 					.append("path")
 					.attr("class", function(d) {return "subunit " + d.id ;})
 					.attr("d",path)
-					.attr("stroke", "#888888");
+					.attr("stroke", "#888888")
+					.attr("filter","url(#drop-shadow)");
+					
 				
 				
 				if (region == "North America") {

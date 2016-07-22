@@ -45,13 +45,36 @@
 		svg = d3.select("#tiltMap").append("svg")
 			.attr("width", width)
 			.attr("height", height);
+		
+		var filter=svg.append("defs")
+			.append("filter")
+				.attr("id","drop-shadow")
+				.attr("x",0)
+				.attr("y",0)
+				.attr("width","200%")
+				.attr("height","200%");
+		
+		filter.append("feOffest")
+			.attr("result","offOut")
+			.attr("in","SourceAlpha")
+			.attr("dx",20)
+			.attr("dy",20);
 			
+		filter.append("feGaussianBlur")
+			.attr("result","blurOut")
+			.attr("in","offOut")
+			.attr("stdDeviation",10);
+		
+		filter.append("feBlend")
+			.attr("in","SourceGraphic")
+			.attr("in2","blurOut")
+			.attr("mode","normal");	
 		svg.append("rect")
 			.attr("class", "background")
 			.attr("width", width)
 			.attr("height", height);
 		
-		var g = svg.append("g");
+		var g = svg.append("g").attr("filter","url(#drop-shadow)");
 		
 		d3.json("countryData/usa.json", function(error, us) {
 			if (error) throw error;
@@ -62,6 +85,7 @@
 				  .data(topojson.feature(us, us.objects.states).features)
 				.enter().append("path")
 				  .attr("d", path);
+				  
 
 			 g.append("path")
 				  .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
@@ -232,23 +256,11 @@
 						Logistics
 					</a>
 				</li>
-				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+				<li>
+					<a onClick='loadPage("latlong.html");'>
 						<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
 						Location
-						</a>
-					<ul class="dropdown-menu" role="menu" id="mapMenu">
-					<script>
-					d3.select("#mapMenu").selectAll("li")
-						.data(regions)
-						.enter()
-						.append("li")
-							.append("a")
-							.attr("role","menuitem")
-							.attr("onClick", 'loadPage("latlong.html");')
-							.text(function (d) {return d;});
-					</script>
-					</ul>
+					</a>
 				</li>
 			  </ul>
 			</div>

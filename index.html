@@ -97,23 +97,11 @@
 							Logistics
 						</a>
 					</li>
-					<li class="dropdown">
-						<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+					<li>
+						<a onClick='loadPage("latlong.html");'>
 							<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
 							Location
-							</a>
-						<ul class="dropdown-menu" role="menu" id="mapMenu">
-						<script>
-						d3.select("#mapMenu").selectAll("li")
-							.data(regions)
-							.enter()
-							.append("li")
-								.append("a")
-								.attr("role","menuitem")
-								.attr("onClick", 'loadPage("latlong.html");')
-								.text(function (d) {return d;});
-						</script>
-						</ul>
+						</a>
 					</li>
 				  </ul>
 				</div>
