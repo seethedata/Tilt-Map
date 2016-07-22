@@ -1,35 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link href="css/bootstrap.min.css" rel="stylesheet"/>
-<link href="css/tilt-map.css" rel="stylesheet">
-<script type='text/javascript' src='js/jquery.min.js'></script>
-<script type='text/javascript' src='js/d3.v4.min.js'></script>
-<script type='text/javascript' src='js/topojson.v1.min.js'></script>	
-<script type='text/javascript' src='js/bootstrap.min.js'></script>
-<script language="javascript">
-/*******************
-These are test inputs for the SVG circles
-***********************************************
-	var points = [{"longitude":-75.5,"latitude": 40.1,"TiltFB":10},{"longitude":0,"latitude":0,"TiltFB":4}];
+	<link href="css/bootstrap.min.css" rel="stylesheet"/>
+	<link href="css/tilt-map.css" rel="stylesheet">
+	<script type='text/javascript' src='js/jquery.min.js'></script>
+	<script type='text/javascript' src='js/d3.v4.min.js'></script>
+	<script type='text/javascript' src='js/topojson.v1.min.js'></script>	
+	<script type='text/javascript' src='js/bootstrap.min.js'></script>
+	<script language="javascript">
 
-	var point=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
-
-	This works 
-	var testPoint={"data" : [{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}],"instance": ["server:8080:88"],"min_score": 0,"timestamp": 20160706124512964};
-	
-
-	
-	This works 
-	var testPoint=[{"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965}];
-	
-	
-	This doesn't. The only difference is the lack of starting and ending brackets. The data passed to D3 has to be an array.
-	var testPoint={"longitude": -75.30670565646393, "timestamp": 20160705195216292, "TiltFB": 10.05603305233052166, "TiltLR": -0.3360182733504824, "altitude": 36.665042877197266, "OS": "iOS", "devid": "cce2-fc0d", "Direction": 40.65654021985403, "latitude": 40.067854982140965};
-**********************************************
-*/
 	
 	var regions =["Africa","Asia","Europe","North America","Oceania","South America"];
+	var regionZoomArgs={"Africa" :  		{"args" : {"translate" : [375,250], "scale" : 350}},
+						"Asia" :  			{"args" : {"translate" : [-50,430], "scale" : 350}},
+						"Europe" :  		{"args" : {"translate" : [300,870], "scale" : 550}},
+						"North America" :  	{"args" : {"translate" : [1100,550], "scale" : 350}},
+						"Oceania" :  		{"args" : {"translate" : [-920,-30], "scale" : 550}},
+						"South America" :  	{"args" : {"translate" : [860,80], "scale" : 350}}};
 	var active = d3.select(null);
 
 	var tiltAPI="http://tilt.cfapps.io/safe_dump?";
@@ -39,61 +26,17 @@ These are test inputs for the SVG circles
 	var width = 960;
 	var height = 500;	
 	var min_ts=0;
-
+	var refreshInterval=100;
 
 	function loadPage(url) {
 		window.location.href=url;
 	}
 
-	
-	function initialize() {
-		projection=d3.geoMercator();
-
-					
-		path=d3.geoPath()
-			.projection(projection);
-
-		svg = d3.select("#tiltMap").append("svg")
-		.attr("width", width)
-		.attr("height", height);
-		
-		svg.append("rect")
-		.attr("class", "background")
-		.attr("width", width)
-		.attr("height", height);
-		/*.on("click", reset);*/
-		
-		d3.json("countryData/world.json", function(error, world) {
-			if (error) return console.error(error);
-			var subunits=topojson.feature(world, world.objects.subunits);
-			
-			for (var i=0, len=regions.length;i < len; i++) {
-				g=svg.append("g").attr("id",regions[i]);
-				
-				g.selectAll(".subunit")
-				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==regions[i];}))
-				.enter()
-					.append("path")
-					.attr("class", function(d) {return "subunit " + d.id ;})
-					.attr("d",path)
-					.attr("stroke", "#888888");
-					/*.on("click", clicked);*/
-				
-				
-				if (regions[i] == "North America") {
-					g.append("path")
-					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
-					.attr("class", "state-boundary")
-					.attr("stroke", "#888888")
-					.attr("fill","none")
-					.attr("d", path);
-				}
-			}
-			
-
-		});
+	var zoomRegion=decodeURI(location.search.split("region=")[1]);
+		if (zoomRegion == "undefined") {
+			zoomRegion="World";
 	}
-
+	
 	function getDeviceData() {
 		var url=tiltAPI + "min_score="+min_ts + "&latest=1";
 		d3.json(url, function plotDevices(error, devData) {
@@ -112,7 +55,7 @@ These are test inputs for the SVG circles
 
 						d3.select(this).transition()
 						.attr("id",jsonData.devid)
-						.attr("r",Math.sqrt(Math.abs(jsonData.TiltFB)))
+						.attr("r",d3.max([0.1,Math.sqrt(jsonData.TiltFB)]))
 						.attr("fill",getColor(jsonData.TiltFB))
 						.attr("stroke","#000000")
 						.attr("transform","translate(" + projection([jsonData.longitude,jsonData.latitude]) + ")");
@@ -129,17 +72,12 @@ These are test inputs for the SVG circles
 		
 
 
-	setInterval(function(){getDeviceData()},500);
+	setInterval(function(){getDeviceData()},refreshInterval);
 
 	function getColor(val) {
 		var color;
-		if(val <= -80) {
-			color="#FF0000";
-		} else if (val > -80 && val <= -60) {
-			color="#FFA500";
-		} else if (val > -60 && val <= -10) {
-			color="#FFFF00";
-		} else if (val > -10 && val <= 40) {
+		
+		if (val > 0.1 && val <= 40) {
 			color="#006400";
 		} else if (val > 40 && val <= 60) {
 			color="#FFFF00";
@@ -150,50 +88,26 @@ These are test inputs for the SVG circles
 		}
 		return color;
 	}
-	
-	function clicked(d) {
-		if (active.node() === this) return reset();
-		
-		active.classed("active", false);
-		active = d3.select(this).classed("active", true);
-		
-		var bounds = path.bounds(d),
-		  dx = bounds[1][0] - bounds[0][0],
-		  dy = bounds[1][1] - bounds[0][1],
-		  x = (bounds[0][0] + bounds[1][0]) / 2,
-		  y = (bounds[0][1] + bounds[1][1]) / 2,
-		  scale = .9 / Math.max(dx / width, dy / height),
-		  translate = [width / 2 - scale * x, height / 2 - scale * y];
-	
-		var g=d3.select(this.parentNode);
-		
-		d3.selectAll("g")
-			.attr("visibility","hidden");
-		
-		g.transition()
-		  .attr("visibility","visible")
-		  .duration(750)
-		  /*.style("stroke-width", 1.5 / scale + "px") */
-		  .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+
+	function doZoom(region) {
+			
+			if (region !="World") {
+				projection
+						.scale(regionZoomArgs[region].args.scale)
+						.translate(regionZoomArgs[region].args.translate);	
+									
+			} else {
+				projection
+					.scale(153)
+					.translate([480,250]);
+				
+			}
+			d3.selectAll("path").transition().duration(1000).attr("d",path);
 	}
+	
+	
 
-	function reset() {
-		var g=d3.select(active.node().parentNode);
-		active.classed("active", false);
-		active = d3.select(null);
-		
-
-		g.transition()
-			  .duration(750)
-			  /*.style("stroke-width", "1.5px")*/
-			  .attr("transform", "");
-		d3.selectAll("g")
-		.attr("visibility","visible");
-	}
-
-
-</script>
-
+	</script>
 </head>
 <body class="mapBody">
 <nav class="navbar navbar-inverse">
@@ -234,16 +148,20 @@ These are test inputs for the SVG circles
 						Location
 						</a>
 					<ul class="dropdown-menu" role="menu" id="mapMenu">
-					<script>
-					d3.select("#mapMenu").selectAll("li")
-						.data(regions)
-						.enter()
-						.append("li")
-							.append("a")
-							.attr("role","menuitem")
-							.attr("onClick", 'loadPage("latlong.html");')
-							.text(function (d) {return d;});
-					</script>
+						<script>
+						d3.select("#mapMenu").selectAll("li")
+							.data(regions)
+							.enter()
+							.append("li")
+								.append("a")
+								.attr("role","menuitem")
+								/*.attr("onClick", function(d) {return 'loadPage("latlong.html?region=' + encodeURI(d) + '");';})*/
+								.attr("onClick", function(d) {return "doZoom(\"" + d + "\");";})
+								.text(function (d) {return d;});
+						</script>
+						<li>
+							<a role="menuitem" onClick='doZoom("World");'>World</a>
+						</li>
 					</ul>
 				</li>
 			  </ul>
@@ -255,6 +173,65 @@ These are test inputs for the SVG circles
 	</div>
 	<script>
 	window.onload=initialize();
+	
+	
+	function initialize() {
+		projection=d3.geoMercator();
+
+					
+		path=d3.geoPath()
+			.projection(projection);
+
+		svg = d3.select("#tiltMap").append("svg")
+		.attr("width", width)
+		.attr("height", height);
+		
+		svg.append("rect")
+		.attr("class", "background")
+		.attr("width", width)
+		.attr("height", height);
+
+		
+		
+		d3.json("countryData/world.json", function(error, world) {
+			if (error) return console.error(error);
+			var subunits=topojson.feature(world, world.objects.subunits);
+			
+			for (var i=0, len=regions.length;i < len; i++) {
+				var region=regions[i];
+				/*if (zoomRegion != "World" && region != zoomRegion) continue; // only draw requested region. If the region is "world", draw everything.*/
+				
+				
+
+				g=svg.append("g").attr("id",region).attr("class","continent");
+				
+				g.selectAll(".subunit")
+				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==region;}))
+				.enter()
+					.append("path")
+					.attr("class", function(d) {return "subunit " + d.id ;})
+					.attr("d",path)
+					.attr("stroke", "#888888");
+				
+				
+				if (region == "North America") {
+					g.append("path")
+					.datum(topojson.mesh(world, world.objects.states, function(a,b) {return a != b && a.id == "USA";}))
+					.attr("class", "state-boundary")
+					.attr("stroke", "#888888")
+					.attr("fill","none")
+					.attr("d", path);
+				}
+				
+				
+					
+			}
+			
+
+		});
+
+	}
+
 	</script>
 	<link href="css/tilt-map.css" rel="stylesheet"/>
 </body>
