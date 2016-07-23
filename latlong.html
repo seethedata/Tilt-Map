@@ -90,24 +90,31 @@
 		return color;
 	}
 
-	function doZoom(region) {
+	function doZoom() {
+		if (active.node() === this) return reset();
+		active.classed("active", false);
+		active = d3.select(this).classed("active", true);
 
-		if (region !="World") {
-			projection
-					.scale(regionZoomArgs[region].args.scale)
-					.translate(regionZoomArgs[region].args.translate);	
+		var region=this.id;
+
+		projection
+				.scale(regionZoomArgs[region].args.scale)
+				.translate(regionZoomArgs[region].args.translate);	
 								
-		} else {
-			projection
-				.scale(153)
-				.translate([480,250]);
-			
-		}
-		
 		d3.selectAll("path").transition().duration(750).attr("d",path);
 
 	}
 	
+	function reset() {
+		active.classed("active", false);
+		active = d3.select(null);
+
+
+		projection.scale(153)
+			.translate([480,250]);
+		
+		d3.selectAll("path").transition().duration(750).attr("d",path);
+	}
 	
 
 	</script>
@@ -146,25 +153,10 @@
 					</a>
 				</li>
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+					<a onClick='loadPage("latlong.html");'>
 						<span class="glyphicon glyphicon-globe nav-glyph" aria-hidden="true"></span> 
 						Location
-						</a>
-					<ul class="dropdown-menu" role="menu" id="mapMenu">
-						<script>
-						d3.select("#mapMenu").selectAll("li")
-							.data(regions)
-							.enter()
-							.append("li")
-								.append("a")
-								.attr("role","menuitem")
-								.attr("onClick", function(d) {return "doZoom(\"" + d + "\");";})
-								.text(function (d) {return d;});
-						</script>
-						<li>
-							<a role="menuitem" onClick='doZoom("World");'>World</a>
-						</li>
-					</ul>
+					</a>
 				</li>
 			  </ul>
 			</div>
@@ -174,8 +166,7 @@
 	<div class="container-fluid" id="tiltMap">
 	</div>
 	<script>
-	window.onload=initialize();
-	
+	window.onload=initialize();	
 	
 	function initialize() {
 		projection=d3.geoMercator();
@@ -215,7 +206,8 @@
 		svg.append("rect")
 		.attr("class", "background")
 		.attr("width", width)
-		.attr("height", height);
+		.attr("height", height)
+		.on("click",reset);
 
 		
 		
@@ -226,7 +218,7 @@
 			for (var i=0, len=regions.length;i < len; i++) {
 				var region=regions[i];
 				
-				g=svg.append("g").attr("onClick","doZoom('"+region+"');").attr("id",region).attr("class","continent");
+				g=svg.append("g").attr("id",region).attr("class","continent").on("click",doZoom);
 				
 				g.selectAll(".subunit")
 				.data(topojson.feature(world, world.objects.subunits).features.filter(function(d) { return d.properties.continent==region;}))
@@ -254,6 +246,7 @@
 			
 
 		});
+		
 
 	}
 
